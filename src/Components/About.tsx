@@ -1,4 +1,4 @@
-import { Container, Button, Textarea, Select, MultiSelect } from '@mantine/core';
+import { Container, Button, Textarea, Select, MultiSelect, Avatar } from '@mantine/core';
 import { MdOutlineArrowDownward } from "react-icons/md";
 
 import React from 'react'
@@ -36,8 +36,8 @@ class Talks extends React.Component<{
     dialogue: string,
     names: any,
     type: string,
-    result: string
-
+    result: string,
+    api:any
 }>  {
 
     avatarInput: React.RefObject<unknown>;
@@ -49,7 +49,10 @@ class Talks extends React.Component<{
             names: JSON.parse(localStorage.getItem('names') || '[]'),
             dialogue: '',
             type: '',
-            result: ''
+            result: '',
+            api:{
+                createAvatar:'https://884d3f4579b1d04c.gradio.app/run/create_avatar'
+            }
         }
         this.avatarInput = React.createRef();
 
@@ -279,6 +282,7 @@ class Talks extends React.Component<{
         this.setState({
             result: htmlDiv.innerHTML
         })
+        console.log(html)
         this.copy()
         return htmlDiv
     }
@@ -312,8 +316,8 @@ class Talks extends React.Component<{
         })
     }
 
-    async start(type: string) {
-
+    async start() {
+        let type = this.state.type;
         let avatar: string = this.state.avatar;
         let name: string = this.state.name;
         let dialogue: string = this.state.dialogue;
@@ -341,17 +345,58 @@ class Talks extends React.Component<{
     async readText() {
         return await navigator.clipboard.readText()
     }
+    async getClipboardContents() {
+        let res = []
+        try {
+            const clipboardItems = await navigator.clipboard.read();
+            for (const clipboardItem of clipboardItems) {
+                for (const type of clipboardItem.types) {
+                    const blob = await clipboardItem.getType(type);
+                    // console.log("已读取剪贴板中的内容：", await blob.text());
+                    res.push(blob)
+                }
+            }
+        } catch (err) {
+            console.error("读取剪贴板内容失败: ", err);
+        }
+        return res
+    }
+
 
     async loadImgBase64() {
-        let url = await this.readText();
-        const data = await fetch(url);
-        let blob = await data.blob();
-        let base64 = await this.blobToDataURI(blob);
-        console.log(base64)
-        this.setState({
-            avatar: base64
+        let files = await this.getClipboardContents()
+        for (const file of files) {
+            // console.log(file)
+            if (file.type.match('image')) {
+                let base64:any = await this.blobToDataURI(file);
+                this.setState({
+                    avatar: base64
+                })
+                this.createAvatarGif(base64)
+                return base64
+            }
+        }
+
+    }
+
+    createAvatarGif(base64:string) {
+        fetch(this.state.api.createAvatar, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                data: [
+                    base64,
+                    "gif",
+                ]
+            })
         })
-        return base64
+            .then(r => r.json())
+            .then(
+                r => {
+                    let data = r.data;
+                    console.log(data)
+                }
+            )
     }
 
     blobToDataURI(blob: any) {
@@ -403,7 +448,7 @@ class Talks extends React.Component<{
         return <div style={{
             display: 'flex',
             width: '100%',
-            justifyContent: 'space-around',
+            justifyContent: 'flex-start',
             height: '100vh',
             alignItems: 'center'
         }}>
@@ -412,19 +457,21 @@ class Talks extends React.Component<{
                 display: 'flex',
                 flexDirection: 'column'
             }}>
-                <Button
-                    onClick={() => this.loadImgBase64()}
-                    variant="default" radius="lg" size="md">Avatar</Button>
+                <Avatar size={88}
+                    src={this.state.avatar} alt="it's me" onClick={() => this.loadImgBase64()} />
+
 
                 <MultiSelect
                     label={'昵称'}
                     data={this.state.names}
                     placeholder='选择一个或新建'
+                    maxSelectedValues={1}
                     //   defaultValue={Array.from(this.state.names, (t:any) => t.value)}
                     searchable
                     creatable
+                    clearable
                     getCreateLabel={(query: any) => `+ 新建 ${query}`}
-                    onChange={(e: any) => this.updateName(e)} 
+                    onChange={(e: any) => this.updateName(e)}
                     onCreate={(query: string) => {
                         // console.log('onCreate',this.state.names.filter((t:any) => t.value != query).length > 0)
                         const item = { value: query, label: query };
@@ -445,15 +492,12 @@ class Talks extends React.Component<{
 
 
                 <Textarea
-                    value={this.state.name}
-                    placeholder='name' onChange={(e: any) => this.updateName(e)} />
-                <Textarea
                     value={this.state.dialogue}
                     placeholder='dialogue' onChange={(e: any) => this.updateDialogue(e)} />
-                <Select data={types} value='talkClound' onChange={(e: any) => this.updateType(e)} />
+                <Select data={types} value={this.state.type} onChange={(e: any) => this.updateType(e)} />
                 <div className="buttons">
                     <Button
-                        onClick={() => this.start('talkClound')}
+                        onClick={() => this.start()}
                         color="yellow"
                         rightIcon={<MdOutlineArrowDownward size={16} />} radius="lg" size="md">Start</Button>
                     <Button
@@ -463,8 +507,11 @@ class Talks extends React.Component<{
                 {/* <div dangerouslySetInnerHTML={{ __html: this.state.result }}></div> */}
 
 
-            </div>
-            <iframe srcDoc={this.state.result}></iframe>
+            </div >
+            <iframe srcDoc={this.state.result} style={{
+                marginLeft: '24px',
+                width: '50%', height: '50%', border: 'none', outline: '1px dashed gray'
+            }}></iframe>
 
         </div>
 
