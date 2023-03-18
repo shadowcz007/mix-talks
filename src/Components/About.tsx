@@ -36,8 +36,7 @@ class Talks extends React.Component<{
     dialogue: string,
     names: any,
     type: string,
-    result: string,
-    api:any
+    result: string
 }>  {
 
     avatarInput: React.RefObject<unknown>;
@@ -49,10 +48,7 @@ class Talks extends React.Component<{
             names: JSON.parse(localStorage.getItem('names') || '[]'),
             dialogue: '',
             type: '',
-            result: '',
-            api:{
-                createAvatar:'http://localhost:7860/run/create_avatar'
-            }
+            result: ''
         }
         this.avatarInput = React.createRef();
 
@@ -296,10 +292,11 @@ class Talks extends React.Component<{
 
     updateName(name: any) {
         console.log(name)
-        // let t = name.target.value;
-        // this.setState({
-        //     name: t
-        // })
+        let t = name[0];
+        this.setState({
+            name: t
+        })
+        localStorage.setItem('_name',t)
     }
 
     updateDialogue(dialogue: any) {
@@ -308,12 +305,14 @@ class Talks extends React.Component<{
         this.setState({
             dialogue: t
         })
+        localStorage.setItem('_dialogue',t)
     }
     updateType(t: string) {
         console.log(t)
         this.setState({
             type: t
         })
+        localStorage.setItem('_type',t)
     }
 
     async start() {
@@ -321,6 +320,7 @@ class Talks extends React.Component<{
         let avatar: string = this.state.avatar;
         let name: string = this.state.name;
         let dialogue: string = this.state.dialogue;
+        console.log(this.state)
         if (type === 'left' || type === 'right') {
             await this.createBaseHtml(
                 avatar,
@@ -372,6 +372,7 @@ class Talks extends React.Component<{
                 this.setState({
                     avatar: base64
                 })
+                localStorage.setItem('_avatar',base64)
                 this.createAvatarGif(base64)
                 return base64
             }
@@ -380,7 +381,8 @@ class Talks extends React.Component<{
     }
 
     createAvatarGif(base64:string) {
-        fetch(this.state.api.createAvatar, {
+        let url:any=localStorage.getItem('_api_url')
+        fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -401,6 +403,7 @@ class Talks extends React.Component<{
                     this.setState({
                         avatar:im.src
                     })
+                    localStorage.setItem('_avatar',im.src)
                 }
             )
     }

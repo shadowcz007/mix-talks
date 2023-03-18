@@ -1,4 +1,4 @@
-import { Button, Badge, Burger, Drawer, Code, Title, Anchor, Text } from '@mantine/core';
+import { Button, Badge, Burger, Drawer, Code, Title, Anchor, Text, Input } from '@mantine/core';
 import { UnstyledButton, Group, Avatar } from '@mantine/core';
 import React from 'react';
 import { Link } from 'react-scroll';
@@ -6,13 +6,25 @@ import { Link } from 'react-scroll';
 const Header = () => {
     //const theme = useMantineTheme();
     const [opened, setOpened] = React.useState(false);
+    const [api, setApi] = React.useState(localStorage.getItem('_api_url')||'');
     const title = opened ? 'Close navigation' : 'Open navigation';
 
     return (
         <header>
             <div className="content-desktop">
                 <div>
-                    <Badge size="lg" radius={10} color="yellow">A simple Mantine template</Badge>
+                    <Badge size="lg" radius={10} color="yellow">
+                        <Input
+                            placeholder="API地址"
+                            size="md"
+                            value={api}
+                            onChange={(e)=>{
+                                console.log(e.target.value)
+                                localStorage.setItem('_api_url',e.target.value)
+                                setApi(e.target.value)
+                            }}
+                        />
+                    </Badge>
                 </div>
                 <div className="navbar">
                     <div className="navbar-item"><Link to="section-one" smooth duration={500}>Carousel</Link></div>
