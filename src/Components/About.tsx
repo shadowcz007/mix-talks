@@ -394,7 +394,13 @@ class Talks extends React.Component<{
             .then(
                 r => {
                     let data = r.data;
-                    console.log(data)
+                    // console.log(data)
+                    let d=document.createElement('div');
+                    d.innerHTML=data[0];
+                    let im:any=d.querySelector('img');
+                    this.setState({
+                        avatar:im.src
+                    })
                 }
             )
     }
