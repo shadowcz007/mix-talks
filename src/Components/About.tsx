@@ -43,11 +43,11 @@ class Talks extends React.Component<{
     constructor(props: any) {
         super(props)
         this.state = {
-            avatar: '',
-            name: '',
+            avatar: localStorage.getItem('_avatar')||'',
+            name: localStorage.getItem('_name')||'',
             names: JSON.parse(localStorage.getItem('names') || '[]'),
-            dialogue: '',
-            type: '',
+            dialogue: localStorage.getItem('_dialogue')||'',
+            type: localStorage.getItem('_type')||'',
             result: ''
         }
         this.avatarInput = React.createRef();
@@ -134,13 +134,14 @@ class Talks extends React.Component<{
         let oImg = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAeCAYAAABE4bxTAAADA0lEQVRYR8XXX0hTURwH8O/vbrubFQmBL2IvuZmC4EMP/YEebFtCUO/VSxBRUA89BCG5p0TIwB6C8qGHFf2hQEsKI92cUOhDpkFJ7s6sQASfpDJxu39+cTZXmvtz73bN87Kxnfs9n3vO72znElbaoKK2kYNfBWrlt9nPNuOV/oKSJ4joPkA9umGEWna7pzYVFIuxU69R4wB2AdAJ6AFwze+Tx/8n7M8MiUEjSuosCN2rAQwegCFdD9Q5o0TEG41bA+pPsFuGNgNwdY6BPxHhVpJd94746MdGwdaAxCDRROoiAzcKDLgIxkMQhQM+16jdsHWg2Bf26JqqANhZbDACpgAKS5r2uLmh4mux/ma+XwdK11IidRrAHTMB2T4MvCNQj6TrvYfqPWJzlNRygsSOM2rUCQYaS0oFJon4qcHUG/TJE1YycoIyO04NgnjASlievjMAXjJ40FiSIy1N9KtQZl6QuGgwofYR+JgNqGxEiog7/V53KF9mQVA0sVzLkD4AqLAR9Y1Bp4I+13CuzIKgTIGrrQB32AgSUQ8cSde55kZa/De3KGhsjF3fK9XxMgo8570wUyhY52q3DMrUUmofAW8AOGycqQUGrgR98u3VmUVnKNs5Op28ykxtNoIA0ByD21ejTIPE0i1UqqME7LEXhQVm6lre5uw6Wk1LpkHppVOSDUQ0BmCLzSiAEJYMdFsCZXZd8iQgDnL2N3HUsQxaKfKbBFywm0QMkWu9PfnI8g63GgNwwPrVea+YB9HxkkAisj/BVS6oIwR4bUERdwa87sslgwQiNr3sNVgaYaCqLBQhAjLOB2o9SlkggRhSUnsNwlAZO08hGJf8Ps9zkVc2KF3kcTVAEvdZR9EsMYf8dXI4O8O2gNI/B3H1ICR+AWC7yeVTQOgIeOW7Jf11mBkkklD3Azyyvi/NApggGJNgirOTx/Wf8udchzXbZihdT/FUkyHhvXjPwDQIEQIPG5r2+nD91jkzN2UrSDwcMHCGmHrh0J+JXWMGsZFL1urQtEflPBL9BktnFDZhBW8qAAAAAElFTkSuQmCC`
         // console.log(description)
         description = description.replace(/\n/gi, '<br>')
+
         if (isLeft) {
             return `<section class="mix-editor" style='margin: 2em 0;'>
               <section style="display: flex;">
                   <section style="display: inline-block;width: 56px;">
                       <section
                           style="width: 48px;height: 48px;overflow: hidden;border-radius: 50%;margin: 0px auto;text-align: center;box-sizing: border-box;">
-                          <img src="${imgurl}" style="width: 50px; height: auto; max-width: 100%;" class='mix-variable meta-human-avatar' variable-attribute='src'></section>
+                          <img src="${imgurl}" style="width: max-content; height: inherit; max-width: 100%;" class='mix-variable meta-human-avatar' variable-attribute='src'></section>
                       <p style="margin: 5px auto;color:#333;text-align:center;font-size: 10px;font-weight: 800;" class='mix-variable meta-human-name' variable-attribute='innerText'>${title}</p>
                   </section>
                   <section style="display: inline-block;">
@@ -165,7 +166,7 @@ class Talks extends React.Component<{
                   <section style="display: inline-block;width: 56px;">
                       <section
                           style="width: 48px;height: 48px;overflow: hidden;border-radius: 50%;margin: 0px auto;text-align: center;box-sizing: border-box;">
-                          <img src="${imgurl}" style="width: 50px; height: auto; max-width: 100%;" class='mix-variable meta-human-avatar' variable-attribute='src'></section>
+                          <img src="${imgurl}" style="width: max-content; height: inherit;max-width: 100%;transform: rotateY(180deg) rotate(0deg);" class='mix-variable meta-human-avatar' variable-attribute='src'></section>
                       <p style="margin: 5px auto;color:#333;text-align:center;font-size: 10px;font-weight: 800;" class='mix-variable meta-human-name' variable-attribute='innerText'>${title}</p>
                   </section>
                   
@@ -453,7 +454,7 @@ class Talks extends React.Component<{
     }
 
     render() {
-
+        console.log(this.state.names?.filter((n:any)=>n.value==this.state.name)[0]?.value||'')
         return <div style={{
             display: 'flex',
             width: '100%',
@@ -475,7 +476,7 @@ class Talks extends React.Component<{
                     data={this.state.names}
                     placeholder='选择一个或新建'
                     maxSelectedValues={1}
-                    //   defaultValue={Array.from(this.state.names, (t:any) => t.value)}
+                    defaultValue={[this.state.names?.filter((n:any)=>n.value==this.state.name)[0]?.value||'']}
                     searchable
                     creatable
                     clearable
@@ -517,7 +518,8 @@ class Talks extends React.Component<{
 
 
             </div >
-            <iframe srcDoc={this.state.result} style={{
+            <iframe srcDoc={this.state.result} 
+            style={{
                 marginLeft: '24px',
                 width: '50%', height: '50%', border: 'none', outline: '1px dashed gray'
             }}></iframe>
