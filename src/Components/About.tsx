@@ -51,7 +51,7 @@ class Talks extends React.Component<{
             type: '',
             result: '',
             api:{
-                createAvatar:'https://884d3f4579b1d04c.gradio.app/run/create_avatar'
+                createAvatar:'http://localhost:7860/run/create_avatar'
             }
         }
         this.avatarInput = React.createRef();
