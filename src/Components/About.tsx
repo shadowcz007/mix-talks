@@ -1,4 +1,4 @@
-import { Container, Button, Textarea, Select, MultiSelect, Avatar } from '@mantine/core';
+import { Container, Button, Textarea, Select, MultiSelect, Avatar,Image } from '@mantine/core';
 import { MdOutlineArrowDownward } from "react-icons/md";
 
 import React from 'react'
@@ -36,29 +36,37 @@ class Talks extends React.Component<{
     dialogue: string,
     names: any,
     type: string,
-    result: string
+    result: string,
+    drivingVideos: any
 }>  {
 
     avatarInput: React.RefObject<unknown>;
     constructor(props: any) {
         super(props)
         this.state = {
-            avatar: localStorage.getItem('_avatar')||'',
-            name: localStorage.getItem('_name')||'',
+            drivingVideos: [],
+            avatar: localStorage.getItem('_avatar') || '',
+            name: localStorage.getItem('_name') || '',
             names: JSON.parse(localStorage.getItem('names') || '[]'),
-            dialogue: localStorage.getItem('_dialogue')||'',
-            type: localStorage.getItem('_type')||'',
+            dialogue: localStorage.getItem('_dialogue') || '',
+            type: localStorage.getItem('_type') || '',
             result: ''
         }
         this.avatarInput = React.createRef();
 
     }
 
-    componentDidMount() { }
+    componentDidMount() {
+        this.getDrivingVideos().then((res:any)=>{
+            this.setState({
+                drivingVideos:res.data
+            })
+        })
+    }
 
 
     async createImage(imgurl: string) {
-        let im = new Image();
+        let im = document.createElement('img');
         return new Promise((res, rej) => {
             im.onload = () => {
                 res(im)
@@ -297,7 +305,7 @@ class Talks extends React.Component<{
         this.setState({
             name: t
         })
-        localStorage.setItem('_name',t)
+        localStorage.setItem('_name', t)
     }
 
     updateDialogue(dialogue: any) {
@@ -306,14 +314,14 @@ class Talks extends React.Component<{
         this.setState({
             dialogue: t
         })
-        localStorage.setItem('_dialogue',t)
+        localStorage.setItem('_dialogue', t)
     }
     updateType(t: string) {
         console.log(t)
         this.setState({
             type: t
         })
-        localStorage.setItem('_type',t)
+        localStorage.setItem('_type', t)
     }
 
     async start() {
@@ -365,48 +373,77 @@ class Talks extends React.Component<{
 
 
     async loadImgBase64() {
-        let files = await this.getClipboardContents()
+        let files = await this.getClipboardContents();
+        let isNew=false;
         for (const file of files) {
             // console.log(file)
             if (file.type.match('image')) {
-                let base64:any = await this.blobToDataURI(file);
+                let base64: any = await this.blobToDataURI(file);
                 this.setState({
                     avatar: base64
                 })
-                localStorage.setItem('_avatar',base64)
-                this.createAvatarGif(base64)
+                localStorage.setItem('_avatar', base64)
+                this.createAvatarGif(base64);
+                isNew=true;
                 return base64
             }
+        }
+        if(isNew==false){
+            this.createAvatarGif(this.state.avatar);
         }
 
     }
 
-    createAvatarGif(base64:string) {
-        let url:any=localStorage.getItem('_api_url')
-        fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                data: [
-                    base64,
-                    "gif",
-                ]
+    post(url: string, data: object) {
+        return new Promise((res,rej)=>{
+            fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
             })
+                .then(r => r.json())
+                .then(
+                    r => {
+                        // let data = r.data;
+                        console.log(r)
+                        // let d=document.createElement('div');
+                        // d.innerHTML=data[0];
+                        // let im:any=d.querySelector('img');
+                        // this.setState({
+                        //     avatar:im.src
+                        // })
+                        // localStorage.setItem('_avatar',im.src)
+                        res(r)
+                    }
+                )
         })
-            .then(r => r.json())
-            .then(
-                r => {
-                    let data = r.data;
-                    // console.log(data)
-                    let d=document.createElement('div');
-                    d.innerHTML=data[0];
-                    let im:any=d.querySelector('img');
-                    this.setState({
-                        avatar:im.src
-                    })
-                    localStorage.setItem('_avatar',im.src)
-                }
-            )
+        
+    }
+
+    async getDrivingVideos(){
+        let url: any = (localStorage.getItem('_api_url')||'')+'/driving_video'
+        let res = await this.post(url, {
+            
+        })
+        return res
+    }
+
+    async createAvatarGif(base64: string) {
+        let url: any = (localStorage.getItem('_api_url')||'')+'/create_avatar'
+        let res:any = await this.post(url, {
+            name: this.state.name,
+            base64:base64.split(';base64,')[1],
+            filename:this.state.name+'.png',
+            emotion:this.state.drivingVideos.filter((f:any)=>f.selected)[0]?.emotion,
+            type:'gif',
+            isBase64:true
+        })
+        let data=res.data;
+        this.setState({
+            avatar:data.base64
+        })
+        // console.log(res)
+        return res
     }
 
     blobToDataURI(blob: any) {
@@ -452,9 +489,17 @@ class Talks extends React.Component<{
             console.log(e)
         });
     }
+    selectDrivingVideos(index:number){
+        let data=Array.from(this.state.drivingVideos,(v:any,i)=>{
+            return {...v,selected:i===index}
+        })
+        this.setState({
+            drivingVideos:data
+        })
+    }
 
     render() {
-        console.log(this.state.names?.filter((n:any)=>n.value==this.state.name)[0]?.value||'')
+        console.log(this.state.names?.filter((n: any) => n.value == this.state.name)[0]?.value || '')
         return <div style={{
             display: 'flex',
             width: '100%',
@@ -463,10 +508,36 @@ class Talks extends React.Component<{
             alignItems: 'center'
         }}>
 
+
             <div style={{
                 display: 'flex',
                 flexDirection: 'column'
             }}>
+
+                {
+                    this.state.drivingVideos ? Array.from(this.state.drivingVideos, (v:any,i) => {
+                        if(v.element=='video'){
+                            return <video 
+                            style={{width:'88px',height:'88px',outline:`${v.selected?'1px solid red':'none'}`}}
+                            autoPlay
+                            loop
+                            src={v.base64}
+                            key={i}
+                            onClick={()=>this.selectDrivingVideos(i)}
+                            ></video>
+                               
+                        }else if(v.element=='img'){
+                            return <Image
+                                radius="md"
+                                src={v.base64}
+                            />
+                        }
+                         
+                    }) : ''
+                }
+
+
+
                 <Avatar size={88}
                     src={this.state.avatar} alt="it's me" onClick={() => this.loadImgBase64()} />
 
@@ -476,7 +547,7 @@ class Talks extends React.Component<{
                     data={this.state.names}
                     placeholder='选择一个或新建'
                     maxSelectedValues={1}
-                    defaultValue={[this.state.names?.filter((n:any)=>n.value==this.state.name)[0]?.value||'']}
+                    defaultValue={[this.state.names?.filter((n: any) => n.value == this.state.name)[0]?.value || '']}
                     searchable
                     creatable
                     clearable
@@ -518,11 +589,11 @@ class Talks extends React.Component<{
 
 
             </div >
-            <iframe srcDoc={this.state.result} 
-            style={{
-                marginLeft: '24px',
-                width: '50%', height: '50%', border: 'none', outline: '1px dashed gray'
-            }}></iframe>
+            <iframe srcDoc={this.state.result}
+                style={{
+                    marginLeft: '24px',
+                    width: '50%', height: '50%', border: 'none', outline: '1px dashed gray'
+                }}></iframe>
 
         </div>
 
