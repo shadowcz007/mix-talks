@@ -1,4 +1,4 @@
-import { Container, Button, Textarea, Select, MultiSelect, Avatar,Image } from '@mantine/core';
+import { Container, Button, Textarea, Select, MultiSelect, Avatar,Image,Radio,Group } from '@mantine/core';
 import { MdOutlineArrowDownward } from "react-icons/md";
 
 import React from 'react'
@@ -37,7 +37,8 @@ class Talks extends React.Component<{
     names: any,
     type: string,
     result: string,
-    drivingVideos: any
+    drivingVideos: any,
+    output:string
 }>  {
 
     avatarInput: React.RefObject<unknown>;
@@ -50,7 +51,8 @@ class Talks extends React.Component<{
             names: JSON.parse(localStorage.getItem('names') || '[]'),
             dialogue: localStorage.getItem('_dialogue') || '',
             type: localStorage.getItem('_type') || '',
-            result: ''
+            result: '',
+            output:'gif'
         }
         this.avatarInput = React.createRef();
 
@@ -324,6 +326,13 @@ class Talks extends React.Component<{
         localStorage.setItem('_type', t)
     }
 
+    updateOutput(e:any){
+        console.log(e)
+        this.setState({
+            output:e
+        })
+    }
+
     async start() {
         let type = this.state.type;
         let avatar: string = this.state.avatar;
@@ -432,16 +441,22 @@ class Talks extends React.Component<{
         let url: any = (localStorage.getItem('_api_url')||'')+'/create_avatar'
         let res:any = await this.post(url, {
             name: this.state.name,
+            dialogue:this.state.dialogue,
             base64:base64.split(';base64,')[1],
             filename:this.state.name+'.png',
             emotion:this.state.drivingVideos.filter((f:any)=>f.selected)[0]?.emotion,
-            type:'gif',
+            type:this.state.output,
             isBase64:true
         })
         let data=res.data;
-        this.setState({
-            avatar:data.base64
-        })
+        if(data.type=='gif') {
+            this.setState({
+                avatar:data.base64
+            })
+        } else if(data.type=='mp4'){
+            // 视频
+        }
+    
         // console.log(res)
         return res
     }
@@ -514,6 +529,10 @@ class Talks extends React.Component<{
                 flexDirection: 'column'
             }}>
 
+                <div  style={{
+                display: 'flex',
+                flexDirection: 'row'
+            }}>
                 {
                     this.state.drivingVideos ? Array.from(this.state.drivingVideos, (v:any,i) => {
                         if(v.element=='video'){
@@ -535,7 +554,7 @@ class Talks extends React.Component<{
                          
                     }) : ''
                 }
-
+                </div>
 
 
                 <Avatar size={88}
@@ -577,6 +596,19 @@ class Talks extends React.Component<{
                     placeholder='dialogue' onChange={(e: any) => this.updateDialogue(e)} />
                 <Select data={types} value={this.state.type} onChange={(e: any) => this.updateType(e)} />
                 <div className="buttons">
+                <Radio.Group defaultValue={this.state.output}
+                        name="favoriteFramework"
+                        label="Select your favorite framework/library"
+                        description="This is anonymous"
+                        withAsterisk
+                        onChange={(e:any)=>this.updateOutput(e)}
+                        >
+                        <Group mt="xs">
+                            <Radio value="mp4" label="video" />
+                            <Radio value="gif" label="gif" />
+                            
+                        </Group>
+                        </Radio.Group>
                     <Button
                         onClick={() => this.start()}
                         color="yellow"
