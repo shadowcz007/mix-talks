@@ -1,4 +1,4 @@
-import { Container, Button, Textarea, Select, MultiSelect, Avatar,Image,Radio,Group } from '@mantine/core';
+import { Container, Button, Textarea, Select, MultiSelect, Avatar, Image, Radio, Group, Checkbox } from '@mantine/core';
 import { MdOutlineArrowDownward } from "react-icons/md";
 
 import React from 'react'
@@ -38,7 +38,9 @@ class Talks extends React.Component<{
     type: string,
     result: string,
     drivingVideos: any,
-    output:string
+    output: string,
+    // 是否要镜像头像
+    isMirror: boolean
 }>  {
 
     avatarInput: React.RefObject<unknown>;
@@ -51,17 +53,18 @@ class Talks extends React.Component<{
             names: JSON.parse(localStorage.getItem('names') || '[]'),
             dialogue: localStorage.getItem('_dialogue') || '',
             type: localStorage.getItem('_type') || '',
+            isMirror: false,
             result: '',
-            output:'gif'
+            output: 'gif'
         }
         this.avatarInput = React.createRef();
 
     }
 
     componentDidMount() {
-        this.getDrivingVideos().then((res:any)=>{
+        this.getDrivingVideos().then((res: any) => {
             this.setState({
-                drivingVideos:res.data
+                drivingVideos: res.data
             })
         })
     }
@@ -176,7 +179,7 @@ class Talks extends React.Component<{
                   <section style="display: inline-block;width: 56px;">
                       <section
                           style="width: 48px;height: 48px;overflow: hidden;border-radius: 50%;margin: 0px auto;text-align: center;box-sizing: border-box;">
-                          <img src="${imgurl}" style="width: max-content; height: inherit;max-width: 100%;transform: rotateY(180deg) rotate(0deg);" class='mix-variable meta-human-avatar' variable-attribute='src'></section>
+                          <img src="${imgurl}" style="width: max-content; height: inherit;max-width: 100%;" class='mix-variable meta-human-avatar' variable-attribute='src'></section>
                       <p style="margin: 5px auto;color:#333;text-align:center;font-size: 10px;font-weight: 800;" class='mix-variable meta-human-name' variable-attribute='innerText'>${title}</p>
                   </section>
                   
@@ -326,11 +329,39 @@ class Talks extends React.Component<{
         localStorage.setItem('_type', t)
     }
 
-    updateOutput(e:any){
+    updateOutput(e: any) {
         console.log(e)
         this.setState({
-            output:e
+            output: e
         })
+    }
+
+    mirrorAvatar() {
+        let canvas = document.createElement('canvas');
+        let ctx: any = canvas.getContext('2d');
+        let im = document.createElement('img');
+        im.src = this.state.avatar;
+        im.onload = () => {
+
+            canvas.width = im.naturalWidth;
+            canvas.height = im.naturalHeight;
+            ctx.drawImage(im, 0, 0, canvas.width, canvas.height);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);//清除画布
+            //位移来做镜像翻转
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1); //左右镜像翻转
+
+            //ctx.translate(0, canvas.height);
+            //ctx.scale(1, -1); //上下镜像翻转
+            ctx.drawImage(im, 0, 0, canvas.width, canvas.height);
+
+
+            this.setState({
+                avatar: canvas.toDataURL()
+            })
+        }
+
     }
 
     async start() {
@@ -383,7 +414,7 @@ class Talks extends React.Component<{
 
     async loadImgBase64() {
         let files = await this.getClipboardContents();
-        let isNew=false;
+        let isNew = false;
         for (const file of files) {
             // console.log(file)
             if (file.type.match('image')) {
@@ -393,18 +424,18 @@ class Talks extends React.Component<{
                 })
                 localStorage.setItem('_avatar', base64)
                 this.createAvatarGif(base64);
-                isNew=true;
+                isNew = true;
                 return base64
             }
         }
-        if(isNew==false){
+        if (isNew == false) {
             this.createAvatarGif(this.state.avatar);
         }
 
     }
 
     post(url: string, data: object) {
-        return new Promise((res,rej)=>{
+        return new Promise((res, rej) => {
             fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -426,37 +457,37 @@ class Talks extends React.Component<{
                     }
                 )
         })
-        
+
     }
 
-    async getDrivingVideos(){
-        let url: any = (localStorage.getItem('_api_url')||'')+'/driving_video'
+    async getDrivingVideos() {
+        let url: any = (localStorage.getItem('_api_url') || '') + '/driving_video'
         let res = await this.post(url, {
-            
+
         })
         return res
     }
 
     async createAvatarGif(base64: string) {
-        let url: any = (localStorage.getItem('_api_url')||'')+'/create_avatar'
-        let res:any = await this.post(url, {
+        let url: any = (localStorage.getItem('_api_url') || '') + '/create_avatar'
+        let res: any = await this.post(url, {
             name: this.state.name,
-            dialogue:this.state.dialogue,
-            base64:base64.split(';base64,')[1],
-            filename:this.state.name+'.png',
-            emotion:this.state.drivingVideos.filter((f:any)=>f.selected)[0]?.emotion,
-            type:this.state.output,
-            isBase64:true
+            dialogue: this.state.dialogue,
+            base64: base64.split(';base64,')[1],
+            filename: this.state.name + '.png',
+            emotion: this.state.drivingVideos.filter((f: any) => f.selected)[0]?.emotion,
+            type: this.state.output,
+            isBase64: true
         })
-        let data=res.data;
-        if(data.type=='gif') {
+        let data = res.data;
+        if (data.type == 'gif') {
             this.setState({
-                avatar:data.base64
+                avatar: data.base64
             })
-        } else if(data.type=='mp4'){
+        } else if (data.type == 'mp4') {
             // 视频
         }
-    
+
         // console.log(res)
         return res
     }
@@ -504,12 +535,12 @@ class Talks extends React.Component<{
             console.log(e)
         });
     }
-    selectDrivingVideos(index:number){
-        let data=Array.from(this.state.drivingVideos,(v:any,i)=>{
-            return {...v,selected:i===index}
+    selectDrivingVideos(index: number) {
+        let data = Array.from(this.state.drivingVideos, (v: any, i) => {
+            return { ...v, selected: i === index }
         })
         this.setState({
-            drivingVideos:data
+            drivingVideos: data
         })
     }
 
@@ -529,37 +560,46 @@ class Talks extends React.Component<{
                 flexDirection: 'column'
             }}>
 
-                <div  style={{
-                display: 'flex',
-                flexDirection: 'row'
-            }}>
-                {
-                    this.state.drivingVideos ? Array.from(this.state.drivingVideos, (v:any,i) => {
-                        if(v.element=='video'){
-                            return <video 
-                            style={{width:'88px',height:'88px',outline:`${v.selected?'1px solid red':'none'}`}}
-                            autoPlay
-                            loop
-                            src={v.base64}
-                            key={i}
-                            onClick={()=>this.selectDrivingVideos(i)}
-                            ></video>
-                               
-                        }else if(v.element=='img'){
-                            return <Image
-                                radius="md"
-                                src={v.base64}
-                            />
-                        }
-                         
-                    }) : ''
-                }
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'row'
+                }}>
+                    {
+                        this.state.drivingVideos ? Array.from(this.state.drivingVideos, (v: any, i) => {
+                            if (v.element == 'video') {
+                                return <video
+                                    style={{ width: '88px', height: '88px', outline: `${v.selected ? '1px solid red' : 'none'}` }}
+                                    autoPlay
+                                    loop
+                                    src={v.base64}
+                                    key={i}
+                                    onClick={() => this.selectDrivingVideos(i)}
+                                ></video>
+
+                            } else if (v.element == 'img') {
+                                return <Image
+                                    radius="md"
+                                    src={v.base64}
+                                />
+                            }
+
+                        }) : ''
+                    }
                 </div>
 
 
                 <Avatar size={88}
                     src={this.state.avatar} alt="it's me" onClick={() => this.loadImgBase64()} />
-
+                <Checkbox
+                    label="是否镜像"
+                    checked={this.state.isMirror}
+                    onChange={(event: any) => {
+                        this.setState({
+                            isMirror: event.currentTarget.checked
+                        });
+                        this.mirrorAvatar();
+                    }}
+                />
 
                 <MultiSelect
                     label={'昵称'}
@@ -596,19 +636,19 @@ class Talks extends React.Component<{
                     placeholder='dialogue' onChange={(e: any) => this.updateDialogue(e)} />
                 <Select data={types} value={this.state.type} onChange={(e: any) => this.updateType(e)} />
                 <div className="buttons">
-                <Radio.Group defaultValue={this.state.output}
+                    <Radio.Group defaultValue={this.state.output}
                         name="favoriteFramework"
                         label="Select your favorite framework/library"
                         description="This is anonymous"
                         withAsterisk
-                        onChange={(e:any)=>this.updateOutput(e)}
-                        >
+                        onChange={(e: any) => this.updateOutput(e)}
+                    >
                         <Group mt="xs">
                             <Radio value="mp4" label="video" />
                             <Radio value="gif" label="gif" />
-                            
+
                         </Group>
-                        </Radio.Group>
+                    </Radio.Group>
                     <Button
                         onClick={() => this.start()}
                         color="yellow"
