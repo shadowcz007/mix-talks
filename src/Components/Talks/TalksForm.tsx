@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Paper, Stack, Avatar, Checkbox, MultiSelect, Textarea, Select, Radio, Group, Button, Modal, TextInput } from '@mantine/core';
 import { MdOutlineArrowDownward } from "react-icons/md";
 import { TalksState } from './types';
@@ -31,13 +31,39 @@ const TalksForm: React.FC<TalksFormProps> = ({
     onUpdateApiConfig,
     onToggleConfigModal
 }) => {
+    useEffect(() => {
+        // 从 localStorage 加载缓存的头像
+        const cachedAvatar = localStorage.getItem('avatar');
+        if (cachedAvatar) {
+            onUpdateAvatar(cachedAvatar);
+        }
+    }, [onUpdateAvatar]);
+
     return (
         <Paper shadow="sm" p="md" radius="md">
             <Stack spacing="md">
                 <Avatar 
                     size="xl" 
                     src={state.avatar}
-                    onClick={() => {/* 处理头像上传 */}}
+                    onClick={async () => {
+                        try {
+                            const clipboardItems = await navigator.clipboard.read();
+                            for (const clipboardItem of clipboardItems) {
+                                const imageBlob = clipboardItem.types.includes('image/png') ? await clipboardItem.getType('image/png') : null;
+                                if (imageBlob) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                        const base64data = reader.result as string;
+                                        onUpdateAvatar(base64data); // 更新头像
+                                        localStorage.setItem('avatar', base64data); // 缓存头像
+                                    };
+                                    reader.readAsDataURL(imageBlob);
+                                }
+                            }
+                        } catch (error) {
+                            console.error('无法从剪切板获取图片:', error);
+                        }
+                    }}
                 />
                 
                 <Select

@@ -13,7 +13,7 @@ const inLineText = (name: string, img: string, dialogue: string) => {
      <section style="margin: 0 16px;">
          <p style="
          font-size: 10px;display: inline;"><img src="${img}" 
-         style="width: 32px;height: auto;border-radius:100%;" 
+         style="width: 32px;height: 32px;border-radius: 100%;border: 1px solid #e5e5e5;" 
          class="mix-variable meta-human-avatar" 
          variable-attribute="src"> </p>
          <p style="
@@ -105,7 +105,7 @@ export const oneImageLayout = async (
                   I LOVE TO TRAVEL</p>
           </section>
           <section style="margin-top: 13px;"><img
-                  style="max-width: 100%; width: 100%; display: block; height: auto;"
+                  style="max-width: 100%; width: 100%; display: block; height: auto;border: 1px solid #e5e5e5;"
                   src="${imgurl}"
                   alt=""></section>
           <section
@@ -141,7 +141,7 @@ export const oneImageLayout2 = (
           <section style="display: flex;">
               <section style="display: inline-block;width: 56px;">
                   <section
-                      style="width: 48px;height: 48px;overflow: hidden;border-radius: 50%;margin: 0px auto;text-align: center;box-sizing: border-box;">
+                      style="width: 48px;height: 48px;overflow: hidden;border-radius: 50%;margin: 0px auto;text-align: center;box-sizing: border-box;border: 1px solid #e5e5e5;">
                       <img src="${imgurl}" style="width: max-content; height: inherit; max-width: 100%;" class='mix-variable meta-human-avatar' variable-attribute='src'></section>
                   <p style="margin: 5px auto;color:#333;text-align:center;font-size: 10px;font-weight: 800;" class='mix-variable meta-human-name' variable-attribute='innerText'>${title}</p>
               </section>
@@ -166,7 +166,7 @@ export const oneImageLayout2 = (
   
               <section style="display: inline-block;width: 56px;">
                   <section
-                      style="width: 48px;height: 48px;overflow: hidden;border-radius: 50%;margin: 0px auto;text-align: center;box-sizing: border-box;">
+                      style="width: 48px;height: 48px;overflow: hidden;border-radius: 50%;margin: 0px auto;text-align: center;box-sizing: border-box;border: 1px solid #e5e5e5;">
                       <img src="${imgurl}" style="width: max-content; height: inherit;max-width: 100%;" class='mix-variable meta-human-avatar' variable-attribute='src'></section>
                   <p style="margin: 5px auto;color:#333;text-align:center;font-size: 10px;font-weight: 800;" class='mix-variable meta-human-name' variable-attribute='innerText'>${title}</p>
               </section>

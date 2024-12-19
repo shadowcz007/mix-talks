@@ -7,7 +7,7 @@ interface TalksPreviewProps {
 
 const TalksPreview: React.FC<TalksPreviewProps> = ({ result }) => {
     return (
-        <Paper shadow="sm" p="md" radius="md">
+        <Paper shadow="sm" p="md" radius="md" style={{ outline: '1px solid #bbbbbb' }}>
             <div dangerouslySetInnerHTML={{ __html: result }} />
         </Paper>
     );
