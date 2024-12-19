@@ -7,7 +7,7 @@ body {
   background-color: rgb(248, 246, 246);
 }
 
-section {
+section:not(.mix-editor section) {
   padding: 4rem 0rem;
   padding-right: 60px;
   padding-left: 60px;
