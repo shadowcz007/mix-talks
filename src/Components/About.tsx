@@ -1,8 +1,21 @@
-import { Container, Button, Textarea, Select, MultiSelect, Avatar, Image, Radio, Group, Checkbox } from '@mantine/core';
+import { 
+  Container, 
+  Button, 
+  Textarea, 
+  Select, 
+  MultiSelect, 
+  Avatar, 
+  Radio, 
+  Group, 
+  Checkbox,
+  Paper,
+  Stack,
+  Grid,
+  Title,
+  Text
+} from '@mantine/core';
 import { MdOutlineArrowDownward } from "react-icons/md";
-
 import React from 'react'
-
 
 declare global {
     interface Window {
@@ -28,23 +41,44 @@ const types = [
     { value: 'inlineText', label: '内嵌' }
 ]
 
-class Talks extends React.Component<{
-    talkColors: any
-}, {
-    avatar: any,
-    name: string,
-    dialogue: string,
-    names: any,
-    type: string,
-    result: string,
-    drivingVideos: any,
-    output: string,
-    // 是否要镜像头像
-    isMirror: boolean
-}>  {
+// 定义响应数据的接口
+interface ApiResponse {
+    data: {
+        type: 'gif' | 'mp4';
+        base64: string;
+        [key: string]: any;
+    };
+}
+
+interface TalksProps {
+    talkColors: string[];
+}
+
+interface TalksState {
+    avatar: string;
+    name: string;
+    dialogue: string;
+    names: Array<{
+        value: string;
+        label: string;
+    }>;
+    type: string;
+    result: string;
+    drivingVideos: Array<{
+        element: 'video' | 'img';
+        base64: string;
+        selected?: boolean;
+        emotion?: string;
+    }>;
+    output: 'gif' | 'mp4';
+    isMirror: boolean;
+    error: string | null;
+}
+
+class Talks extends React.Component<TalksProps, TalksState> {
 
     avatarInput: React.RefObject<unknown>;
-    constructor(props: any) {
+    constructor(props: TalksProps) {
         super(props)
         this.state = {
             drivingVideos: [],
@@ -55,18 +89,27 @@ class Talks extends React.Component<{
             type: localStorage.getItem('_type') || '',
             isMirror: false,
             result: '',
-            output: 'gif'
+            output: 'gif',
+            error: null
         }
         this.avatarInput = React.createRef();
 
     }
 
     componentDidMount() {
+        const apiUrl = localStorage.getItem('_api_url');
+        if (!apiUrl) {
+            this.setState({ error: 'Please configure API URL first' });
+            return;
+        }
+
         this.getDrivingVideos().then((res: any) => {
-            this.setState({
-                drivingVideos: res.data
-            })
-        })
+            if (res && res.data) {
+                this.setState({
+                    drivingVideos: res.data
+                });
+            }
+        });
     }
 
 
@@ -304,8 +347,7 @@ class Talks extends React.Component<{
         // })
     }
 
-    updateName(name: any) {
-        console.log(name)
+    updateName = (name: any) => {
         let t = name[0];
         this.setState({
             name: t
@@ -313,24 +355,22 @@ class Talks extends React.Component<{
         localStorage.setItem('_name', t)
     }
 
-    updateDialogue(dialogue: any) {
-        // console.log(dialogue)
+    updateDialogue = (dialogue: any) => {
         let t = dialogue.target.value;
         this.setState({
             dialogue: t
         })
         localStorage.setItem('_dialogue', t)
     }
-    updateType(t: string) {
-        console.log(t)
+
+    updateType = (t: string) => {
         this.setState({
             type: t
         })
         localStorage.setItem('_type', t)
     }
 
-    updateOutput(e: any) {
-        console.log(e)
+    updateOutput = (e: any) => {
         this.setState({
             output: e
         })
@@ -434,62 +474,85 @@ class Talks extends React.Component<{
 
     }
 
-    post(url: string, data: object) {
-        return new Promise((res, rej) => {
+    post(url: string, data: object): Promise<ApiResponse> {
+        return new Promise((resolve, reject) => {
+            if (!url) {
+                reject(new Error('URL is required'));
+                return;
+            }
+
             fetch(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                },
                 body: JSON.stringify(data)
             })
-                .then(r => r.json())
-                .then(
-                    r => {
-                        // let data = r.data;
-                        console.log(r)
-                        // let d=document.createElement('div');
-                        // d.innerHTML=data[0];
-                        // let im:any=d.querySelector('img');
-                        // this.setState({
-                        //     avatar:im.src
-                        // })
-                        // localStorage.setItem('_avatar',im.src)
-                        res(r)
-                    }
-                )
-        })
-
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then((res: ApiResponse) => {
+                resolve(res);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                reject(error);
+            });
+        });
     }
 
     async getDrivingVideos() {
-        let url: any = (localStorage.getItem('_api_url') || '') + '/driving_video'
-        let res = await this.post(url, {
-
-        })
-        return res
+        try {
+            const apiUrl = localStorage.getItem('_api_url');
+            if (!apiUrl) {
+                this.setState({ error: 'API URL not configured' });
+                return { data: [] };
+            }
+            
+            const url = `${apiUrl}/driving_video`;
+            const res = await this.post(url, {});
+            return res;
+        } catch (error) {
+            console.error('Failed to get driving videos:', error);
+            this.setState({ error: 'Failed to load driving videos' });
+            return { data: [] };
+        }
     }
 
     async createAvatarGif(base64: string) {
-        let url: any = (localStorage.getItem('_api_url') || '') + '/create_avatar'
-        let res: any = await this.post(url, {
-            name: this.state.name,
-            dialogue: this.state.dialogue,
-            base64: base64.split(';base64,')[1],
-            filename: this.state.name + '.png',
-            emotion: this.state.drivingVideos.filter((f: any) => f.selected)[0]?.emotion,
-            type: this.state.output,
-            isBase64: true
-        })
-        let data = res.data;
-        if (data.type == 'gif') {
-            this.setState({
-                avatar: data.base64
-            })
-        } else if (data.type == 'mp4') {
-            // 视频
-        }
+        try {
+            const apiUrl = localStorage.getItem('_api_url');
+            if (!apiUrl) {
+                this.setState({ error: 'API URL not configured' });
+                return;
+            }
 
-        // console.log(res)
-        return res
+            const url = `${apiUrl}/create_avatar`;
+            const response: ApiResponse = await this.post(url, {
+                name: this.state.name,
+                dialogue: this.state.dialogue,
+                base64: base64.split(';base64,')[1],
+                filename: this.state.name + '.png',
+                emotion: this.state.drivingVideos.filter((f: any) => f.selected)[0]?.emotion,
+                type: this.state.output,
+                isBase64: true
+            });
+
+            const { data } = response;
+            if (data.type === 'gif') {
+                this.setState({ avatar: data.base64 });
+            } else if (data.type === 'mp4') {
+                console.log('Video response received');
+            }
+
+            return response;
+        } catch (error) {
+            console.error('Failed to create avatar:', error);
+            this.setState({ error: 'Failed to create avatar' });
+        }
     }
 
     blobToDataURI(blob: any) {
@@ -544,131 +607,124 @@ class Talks extends React.Component<{
         })
     }
 
+    getMultiSelectProps() {
+        return {
+            getCreateLabel: (query: string) => `+ 创建 ${query}`,
+            onCreate: (query: string) => {
+                const item = { value: query, label: query };
+                this.setState((prev) => ({
+                    names: [...prev.names, item]
+                }));
+                this.updateName([query]);
+                return item;
+            }
+        };
+    }
+
     render() {
-        console.log(this.state.names?.filter((n: any) => n.value == this.state.name)[0]?.value || '')
-        return <div style={{
-            display: 'flex',
-            width: '100%',
-            justifyContent: 'flex-start',
-            height: '100vh',
-            alignItems: 'center'
-        }}>
+        return (
+            <Container size="xl" py="xl">
+                <Grid>
+                    <Grid.Col span={6}>
+                        <Paper shadow="sm" p="md" radius="md">
+                            <Stack spacing="md">
+                                <Title order={3}>创建对话</Title>
+                                
+                                <Stack spacing="xs">
+                                    <Avatar 
+                                        size={120}
+                                        src={this.state.avatar} 
+                                        alt="Avatar" 
+                                        onClick={() => this.loadImgBase64()} 
+                                        sx={{ cursor: 'pointer' }}
+                                    />
+                                    
+                                    <Checkbox
+                                        label="镜像头像"
+                                        checked={this.state.isMirror}
+                                        onChange={(event) => {
+                                            this.setState({
+                                                isMirror: event.currentTarget.checked
+                                            });
+                                            this.mirrorAvatar();
+                                        }}
+                                    />
+                                </Stack>
 
-
-            <div style={{
-                display: 'flex',
-                flexDirection: 'column'
-            }}>
-
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'row'
-                }}>
-                    {
-                        this.state.drivingVideos ? Array.from(this.state.drivingVideos, (v: any, i) => {
-                            if (v.element == 'video') {
-                                return <video
-                                    style={{ width: '88px', height: '88px', outline: `${v.selected ? '1px solid red' : 'none'}` }}
-                                    autoPlay
-                                    loop
-                                    src={v.base64}
-                                    key={i}
-                                    onClick={() => this.selectDrivingVideos(i)}
-                                ></video>
-
-                            } else if (v.element == 'img') {
-                                return <Image
-                                    radius="md"
-                                    src={v.base64}
+                                <MultiSelect
+                                    label="昵称"
+                                    data={this.state.names}
+                                    placeholder="选择或新建昵称"
+                                    maxSelectedValues={1}
+                                    searchable
+                                    creatable
+                                    clearable
+                                    {...this.getMultiSelectProps()}
                                 />
-                            }
 
-                        }) : ''
-                    }
-                </div>
+                                <Textarea
+                                    label="对话内容"
+                                    value={this.state.dialogue}
+                                    placeholder="输入对话内容"
+                                    minRows={4}
+                                    onChange={this.updateDialogue}
+                                />
 
+                                <Select
+                                    label="对话类型"
+                                    data={types}
+                                    value={this.state.type}
+                                    onChange={this.updateType}
+                                />
 
-                <Avatar size={88}
-                    src={this.state.avatar} alt="it's me" onClick={() => this.loadImgBase64()} />
-                <Checkbox
-                    label="是否镜像"
-                    checked={this.state.isMirror}
-                    onChange={(event: any) => {
-                        this.setState({
-                            isMirror: event.currentTarget.checked
-                        });
-                        this.mirrorAvatar();
-                    }}
-                />
+                                <Radio.Group
+                                    value={this.state.output}
+                                    onChange={this.updateOutput}
+                                    label="输出格式"
+                                    description="选择输出的文件格式"
+                                >
+                                    <Group mt="xs">
+                                        <Radio value="mp4" label="视频" />
+                                        <Radio value="gif" label="GIF" />
+                                    </Group>
+                                </Radio.Group>
 
-                <MultiSelect
-                    label={'昵称'}
-                    data={this.state.names}
-                    placeholder='选择一个或新建'
-                    maxSelectedValues={1}
-                    defaultValue={[this.state.names?.filter((n: any) => n.value == this.state.name)[0]?.value || '']}
-                    searchable
-                    creatable
-                    clearable
-                    getCreateLabel={(query: any) => `+ 新建 ${query}`}
-                    onChange={(e: any) => this.updateName(e)}
-                    onCreate={(query: string) => {
-                        // console.log('onCreate',this.state.names.filter((t:any) => t.value != query).length > 0)
-                        const item = { value: query, label: query };
-                        // 新标签
-                        if (this.state.names.length == 0 ||
-                            this.state.names.filter((t: any) => t.value != query).length > 0
-                        ) {
-                            // console.log('onCreate',that)
-                            let names = [item, ...this.state.names];
-                            this.setState({
-                                names
-                            });
-                            localStorage.setItem('names', JSON.stringify(names))
-                        }
-                        return item
-                    }}
-                />
+                                <Group>
+                                    <Button
+                                        onClick={() => this.start()}
+                                        color="blue"
+                                        leftIcon={<MdOutlineArrowDownward size={16} />}
+                                    >
+                                        生成
+                                    </Button>
+                                    <Button
+                                        onClick={() => this.copy()}
+                                        variant="light"
+                                    >
+                                        复制
+                                    </Button>
+                                </Group>
+                            </Stack>
+                        </Paper>
+                    </Grid.Col>
 
-
-                <Textarea
-                    value={this.state.dialogue}
-                    placeholder='dialogue' onChange={(e: any) => this.updateDialogue(e)} />
-                <Select data={types} value={this.state.type} onChange={(e: any) => this.updateType(e)} />
-                <div className="buttons">
-                    <Radio.Group defaultValue={this.state.output}
-                        name="favoriteFramework"
-                        label="Select your favorite framework/library"
-                        description="This is anonymous"
-                        withAsterisk
-                        onChange={(e: any) => this.updateOutput(e)}
-                    >
-                        <Group mt="xs">
-                            <Radio value="mp4" label="video" />
-                            <Radio value="gif" label="gif" />
-
-                        </Group>
-                    </Radio.Group>
-                    <Button
-                        onClick={() => this.start()}
-                        color="yellow"
-                        rightIcon={<MdOutlineArrowDownward size={16} />} radius="lg" size="md">Start</Button>
-                    <Button
-                        onClick={() => this.copy()}
-                        variant="default" radius="lg" size="md">Copy</Button>
-                </div>
-                {/* <div dangerouslySetInnerHTML={{ __html: this.state.result }}></div> */}
-
-
-            </div >
-            <iframe srcDoc={this.state.result}
-                style={{
-                    marginLeft: '24px',
-                    width: '50%', height: '50%', border: 'none', outline: '1px dashed gray'
-                }}></iframe>
-
-        </div>
-
+                    <Grid.Col span={6}>
+                        <Paper shadow="sm" p="md" radius="md" style={{ height: '100%' }}>
+                            <iframe 
+                                title="预览"
+                                srcDoc={this.state.result}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none',
+                                    borderRadius: '4px'
+                                }}
+                            />
+                        </Paper>
+                    </Grid.Col>
+                </Grid>
+            </Container>
+        );
     }
 
 }
