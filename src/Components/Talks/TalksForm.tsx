@@ -37,8 +37,8 @@ interface TalksFormProps {
     onEditCharacter?: (character: Character) => void;
 }
 
-const TalksForm: React.FC<TalksFormProps> = ({ 
-    state, 
+const TalksForm: React.FC<TalksFormProps> = ({
+    state,
     onUpdateAvatar,
     onUpdateName,
     onUpdateDialogue,
@@ -63,7 +63,7 @@ const TalksForm: React.FC<TalksFormProps> = ({
 }) => {
     const [characters, setCharacters] = React.useState<Character[]>([]);
     const [showDescription, setShowDescription] = React.useState(false);
-    
+
     useEffect(() => {
         // 从 localStorage 加载缓存的头像
         const cachedAvatar = localStorage.getItem('avatar');
@@ -91,15 +91,15 @@ const TalksForm: React.FC<TalksFormProps> = ({
         <Paper shadow="sm" p="md" radius="md">
             <Stack spacing="md">
                 <Group position="left">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         color="gray"
                         onClick={onToggleConfigModal}
                     >
                         API配置
                     </Button>
                 </Group>
-                
+
                 <Group position="left" align="flex-end">
                     <Select
                         style={{ width: 200 }}
@@ -110,9 +110,9 @@ const TalksForm: React.FC<TalksFormProps> = ({
                         }))}
                         onChange={handleCharacterSelect}
                     />
-                    
-                    <Button 
-                        variant="outline" 
+
+                    <Button
+                        variant="outline"
                         color="blue"
                         onClick={onToggleCharacterModal}
                     >
@@ -120,13 +120,21 @@ const TalksForm: React.FC<TalksFormProps> = ({
                     </Button>
                 </Group>
                 <Group position="left" spacing="xs">
-                    <Avatar 
-                        size="xl" 
+                    <Avatar
+                        size="xl"
                         src={state.avatar}
-                        
+
                     />
+
+                    <Checkbox
+                        label="镜像"
+                        checked={state.isMirror}
+                        onChange={onToggleMirror}
+                    />
+
+
                     {state.characterDescription && (
-                        <MdInfo 
+                        <MdInfo
                             size={24}
                             style={{ cursor: 'pointer' }}
                             onClick={() => setShowDescription(!showDescription)}
@@ -148,25 +156,18 @@ const TalksForm: React.FC<TalksFormProps> = ({
                     onChange={onUpdateType}
                     data={TALK_TYPES}
                 />
-                
+
                 <Textarea
                     label="对话内容"
                     value={state.dialogue}
                     onChange={(e) => onUpdateDialogue(e.currentTarget.value)}
                     minRows={4}
                 />
-                
-                <Checkbox
-                    label="镜像"
-                    checked={state.isMirror}
-                    onChange={onToggleMirror}
-                />
-                
-             
-              
-                
+
+
+
                 <Group position="left">
-                    <Button 
+                    <Button
                         onClick={onCreateAvatar}
                         loading={state.isLoading}
                     >
@@ -180,7 +181,7 @@ const TalksForm: React.FC<TalksFormProps> = ({
                 onClose={onToggleCharacterModal}
                 title="角色管理"
             >
-                <CharacterManager 
+                <CharacterManager
                     state={state}
                     onUpdateAvatar={onUpdateAvatar}
                     onUpdateCharacterInput={onUpdateCharacterInput}
