@@ -90,38 +90,40 @@ const TalksForm: React.FC<TalksFormProps> = ({
     return (
         <Paper shadow="sm" p="md" radius="md">
             <Stack spacing="md">
-                <Select
-                    label="选择角色"
-                    data={characters.map(char => ({
-                        value: char.id,
-                        label: char.name
-                    }))}
-                    onChange={handleCharacterSelect}
-                />
+                <Group position="left">
+                    <Button 
+                        variant="outline" 
+                        color="gray"
+                        onClick={onToggleConfigModal}
+                    >
+                        API配置
+                    </Button>
+                </Group>
                 
-                <Group position="center" spacing="xs">
+                <Group position="left" align="flex-end">
+                    <Select
+                        style={{ width: 200 }}
+                        label="选择角色"
+                        data={characters.map(char => ({
+                            value: char.id,
+                            label: char.name
+                        }))}
+                        onChange={handleCharacterSelect}
+                    />
+                    
+                    <Button 
+                        variant="outline" 
+                        color="blue"
+                        onClick={onToggleCharacterModal}
+                    >
+                        创建新角色
+                    </Button>
+                </Group>
+                <Group position="left" spacing="xs">
                     <Avatar 
                         size="xl" 
                         src={state.avatar}
-                        onClick={async () => {
-                            try {
-                                const clipboardItems = await navigator.clipboard.read();
-                                for (const clipboardItem of clipboardItems) {
-                                    const imageBlob = clipboardItem.types.includes('image/png') ? await clipboardItem.getType('image/png') : null;
-                                    if (imageBlob) {
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => {
-                                            const base64data = reader.result as string;
-                                            onUpdateAvatar(base64data); // 更新头像
-                                            localStorage.setItem('avatar', base64data); // 缓存头像
-                                        };
-                                        reader.readAsDataURL(imageBlob);
-                                    }
-                                }
-                            } catch (error) {
-                                console.error('无法从剪切板获取图片:', error);
-                            }
-                        }}
+                        
                     />
                     {state.characterDescription && (
                         <MdInfo 
@@ -160,28 +162,17 @@ const TalksForm: React.FC<TalksFormProps> = ({
                     onChange={onToggleMirror}
                 />
                 
-                <Button 
-                    variant="outline" 
-                    color="gray"
-                    onClick={onToggleConfigModal}
-                >
-                    API配置
-                </Button>
+             
+              
                 
-                <Button 
-                    variant="outline" 
-                    color="blue"
-                    onClick={onToggleCharacterModal}
-                >
-                    创建新角色
-                </Button>
-                
-                <Button 
-                    onClick={onCreateAvatar}
-                    loading={state.isLoading}
-                >
-                    生成
-                </Button>
+                <Group position="left">
+                    <Button 
+                        onClick={onCreateAvatar}
+                        loading={state.isLoading}
+                    >
+                        生成
+                    </Button>
+                </Group>
             </Stack>
 
             <Modal
