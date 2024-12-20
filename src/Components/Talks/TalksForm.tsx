@@ -15,7 +15,13 @@ interface TalksFormProps {
     onUpdateOutput: (output: 'gif' | 'mp4') => void;
     onCreateCharacter?: () => void;
     onUpdateApiConfig?: (apiUrl: string, apiKey: string, model: string) => void;
-    onToggleConfigModal?: () => void;
+    onToggleConfigModal: () => void;
+    onToggleCharacterModal: () => void;
+    onUpdateCharacterInput?: (input: string) => void;
+    onUpdateCharacterDescription?: (desc: string) => void;
+    onUpdateApiUrl?: (url: string) => void;
+    onUpdateApiKey?: (key: string) => void;
+    onUpdateModel?: (model: string) => void;
 }
 
 const TalksForm: React.FC<TalksFormProps> = ({ 
@@ -29,7 +35,13 @@ const TalksForm: React.FC<TalksFormProps> = ({
     onUpdateOutput,
     onCreateCharacter,
     onUpdateApiConfig,
-    onToggleConfigModal
+    onToggleConfigModal,
+    onToggleCharacterModal,
+    onUpdateCharacterInput,
+    onUpdateCharacterDescription,
+    onUpdateApiUrl,
+    onUpdateApiKey,
+    onUpdateModel
 }) => {
     useEffect(() => {
         // 从 localStorage 加载缓存的头像
@@ -97,7 +109,7 @@ const TalksForm: React.FC<TalksFormProps> = ({
                 <Button 
                     variant="outline" 
                     color="blue"
-                    onClick={() => state.isCreateCharacterModalOpen = true}
+                    onClick={onToggleCharacterModal}
                 >
                     创建新角色
                 </Button>
@@ -112,19 +124,19 @@ const TalksForm: React.FC<TalksFormProps> = ({
 
             <Modal
                 opened={state.isCreateCharacterModalOpen}
-                onClose={() => state.isCreateCharacterModalOpen = false}
+                onClose={onToggleCharacterModal}
                 title="创建新角色"
             >
                 <Stack>
                     <TextInput
                         label="角色名称"
                         value={state.characterInput}
-                        onChange={(e) => state.characterInput = e.currentTarget.value}
+                        onChange={(e) => onUpdateCharacterInput?.(e.currentTarget.value)}
                     />
                     <Textarea
                         label="角色描述"
                         value={state.characterDescription}
-                        onChange={(e) => state.characterDescription = e.currentTarget.value}
+                        onChange={(e) => onUpdateCharacterDescription?.(e.currentTarget.value)}
                         minRows={3}
                     />
                     <Button
@@ -138,27 +150,27 @@ const TalksForm: React.FC<TalksFormProps> = ({
 
             <Modal
                 opened={state.isConfigModalOpen}
-                onClose={() => onToggleConfigModal?.()}
+                onClose={onToggleConfigModal}
                 title="API配置"
             >
                 <Stack>
                     <TextInput
                         label="API URL"
                         value={state.apiUrl}
-                        onChange={(e) => state.apiUrl = e.currentTarget.value}
+                        onChange={(e) => onUpdateApiUrl?.(e.currentTarget.value)}
                         placeholder="请输入API URL"
                     />
                     <TextInput
                         label="API Key"
                         value={state.apiKey}
-                        onChange={(e) => state.apiKey = e.currentTarget.value}
+                        onChange={(e) => onUpdateApiKey?.(e.currentTarget.value)}
                         placeholder="请输入API Key"
                         type="password"
                     />
                     <TextInput
                         label="模型"
                         value={state.model}
-                        onChange={(e) => state.model = e.currentTarget.value}
+                        onChange={(e) => onUpdateModel?.(e.currentTarget.value)}
                         placeholder="请输入模型名称"
                     />
                     <Button

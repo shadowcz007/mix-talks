@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Grid } from '@mantine/core';
 import { TalksProps, TalksState, DrivingVideo } from './types';
 import { createAvatarGif, getDrivingVideos } from './api/talkApi';
@@ -6,97 +6,122 @@ import { createBaseHtml } from './utils/htmlGenerators';
 import TalksForm from './TalksForm';
 import TalksPreview from './TalksPreview';
 
-class Talks extends React.Component<TalksProps, TalksState> {
-    constructor(props: TalksProps) {
-        super(props);
-        this.state = {
-            avatar: localStorage.getItem('_avatar') || '',
-            name: localStorage.getItem('_name') || '',
-            dialogue: localStorage.getItem('_dialogue') || '',
-            names: JSON.parse(localStorage.getItem('names') || '[]'),
-            type: localStorage.getItem('_type') || 'left',
-            result: '',
-            drivingVideos: [],
-            output: 'gif',
-            isMirror: false,
-            error: null,
-            isCreateCharacterModalOpen: false,
-            characterInput: '',
-            characterDescription: '',
-            characters: [],
-            isLoading: false,
-            isConfigModalOpen: false,
-            apiUrl: localStorage.getItem('_api_url') || '',
-            apiKey: localStorage.getItem('_api_key') || '',
-            model: localStorage.getItem('_model') || '',
-            streamResponse: '',
-            lastResponse: ''
-        };
+const Talks: React.FC<TalksProps> = () => {
+    const [state, setState] = useState<TalksState>({
+        avatar: localStorage.getItem('_avatar') || '',
+        name: localStorage.getItem('_name') || '',
+        dialogue: localStorage.getItem('_dialogue') || '',
+        names: JSON.parse(localStorage.getItem('names') || '[]'),
+        type: localStorage.getItem('_type') || 'left',
+        result: '',
+        drivingVideos: [],
+        output: 'gif',
+        isMirror: false,
+        error: null,
+        isCreateCharacterModalOpen: false,
+        characterInput: '',
+        characterDescription: '',
+        characters: [],
+        isLoading: false,
+        isConfigModalOpen: false,
+        apiUrl: localStorage.getItem('_api_url') || '',
+        apiKey: localStorage.getItem('_api_key') || '',
+        model: localStorage.getItem('_model') || '',
+        streamResponse: '',
+        lastResponse: ''
+    });
 
-        // 绑定方法
-        this.updateAvatar = this.updateAvatar.bind(this);
-        this.updateName = this.updateName.bind(this);
-        this.updateDialogue = this.updateDialogue.bind(this);
-        this.updateType = this.updateType.bind(this);
-        this.toggleMirror = this.toggleMirror.bind(this);
-        this.createAvatar = this.createAvatar.bind(this);
-    }
+    useEffect(() => {
+        getDrivingVideos().then(response => {
+            if (response.data && Array.isArray(response.data)) {
+                setState(prev => ({
+                    ...prev,
+                    drivingVideos: response.data as DrivingVideo[]
+                }));
+            }
+        }).catch(error => {
+            setState(prev => ({
+                ...prev,
+                error: '获取驱动视频失败'
+            }));
+        });
+    }, []);
 
-    updateAvatar = (imgurl: string) => {
-        this.setState({ avatar: imgurl });
+    const handleUpdateAvatar = (imgurl: string) => {
+        setState(prev => ({
+            ...prev,
+            avatar: imgurl
+        }));
         localStorage.setItem('_avatar', imgurl);
     };
 
-    updateName = (name: string) => {
-        this.setState({ name });
+    const handleUpdateName = (name: string) => {
+        setState(prev => ({
+            ...prev,
+            name
+        }));
         localStorage.setItem('_name', name);
     };
 
-    updateDialogue = (dialogue: string) => {
-        this.setState({ dialogue });
+    const handleUpdateDialogue = (dialogue: string) => {
+        setState(prev => ({
+            ...prev,
+            dialogue
+        }));
         localStorage.setItem('_dialogue', dialogue);
     };
 
-    updateType = (type: string) => {
-        this.setState({ type });
+    const handleUpdateType = (type: string) => {
+        setState(prev => ({
+            ...prev,
+            type
+        }));
         localStorage.setItem('_type', type);
     };
 
-    toggleMirror = () => {
-        this.setState(prevState => ({
-            isMirror: !prevState.isMirror
+    const handleToggleMirror = () => {
+        setState(prev => ({
+            ...prev,
+            isMirror: !prev.isMirror
         }));
     };
 
-    createAvatar = async () => {
+    const handleCreateAvatar = async () => {
         try {
-            this.setState({ isLoading: true });
+            setState(prev => ({
+                ...prev,
+                isLoading: true
+            }));
 
-
-            if (this.state.avatar) {
+            if (state.avatar) {
                 const html = await createBaseHtml(
-                    this.state.avatar,
-                    this.state.type,
-                    this.state.name,
-                    this.state.dialogue
+                    state.avatar,
+                    state.type,
+                    state.name,
+                    state.dialogue
                 );
-                this.setState({
-                    avatar: this.state.avatar,
+                setState(prev => ({
+                    ...prev,
+                    avatar: state.avatar,
                     result: html,
                     isLoading: false
-                });
+                }));
             }
         } catch (error) {
-            this.setState({
+            setState(prev => ({
+                ...prev,
                 error: '创建头像失败',
                 isLoading: false
-            });
+            }));
         }
     };
 
-    createCharacter = async () => {
+    const handleCreateCharacter = async () => {
         try {
-            this.setState({ isLoading: true });
+            setState(prev => ({
+                ...prev,
+                isLoading: true
+            }));
             
             // 这里添加创建角色的API调用
             // const response = await createCharacterApi({
@@ -105,10 +130,11 @@ class Talks extends React.Component<TalksProps, TalksState> {
             // });
 
             // 更新角色列表
-            this.setState(prevState => ({
-                characters: [...prevState.characters, {
-                    name: this.state.characterInput,
-                    description: this.state.characterDescription
+            setState(prev => ({
+                ...prev,
+                characters: [...prev.characters, {
+                    name: prev.characterInput,
+                    description: prev.characterDescription
                 }],
                 characterInput: '',
                 characterDescription: '',
@@ -117,38 +143,29 @@ class Talks extends React.Component<TalksProps, TalksState> {
             }));
 
         } catch (error) {
-            this.setState({
+            setState(prev => ({
+                ...prev,
                 error: '创建角色失败',
                 isLoading: false
-            });
+            }));
         }
     };
 
-    componentDidMount() {
-        getDrivingVideos().then(response => {
-            if (response.data && Array.isArray(response.data)) {
-                this.setState({
-                    drivingVideos: response.data as DrivingVideo[]
-                });
-            }
-        }).catch(error => {
-            this.setState({ error: '获取驱动视频失败' });
-        });
-    }
-
-    toggleConfigModal = () => {
-        this.setState(prevState => ({
-            isConfigModalOpen: !prevState.isConfigModalOpen
+    const handleToggleConfigModal = () => {
+        setState(prev => ({
+            ...prev,
+            isConfigModalOpen: !prev.isConfigModalOpen
         }));
     };
 
-    updateApiConfig = (apiUrl: string, apiKey: string, model: string) => {
-        this.setState({ 
+    const handleUpdateApiConfig = (apiUrl: string, apiKey: string, model: string) => {
+        setState(prev => ({ 
+            ...prev,
             apiUrl,
             apiKey,
             model,
             isConfigModalOpen: false 
-        });
+        }));
         
         // 保存到localStorage
         localStorage.setItem('_api_url', apiUrl);
@@ -156,33 +173,47 @@ class Talks extends React.Component<TalksProps, TalksState> {
         localStorage.setItem('_model', model);
     };
 
-    render() {
-        return (
-            <Container size="xl" py="xl">
-                <Grid>
-                    <Grid.Col span={6}>
-                        <TalksForm
-                            state={this.state}
-                            onUpdateAvatar={this.updateAvatar}
-                            onUpdateName={this.updateName}
-                            onUpdateDialogue={this.updateDialogue}
-                            onUpdateType={this.updateType}
-                            onToggleMirror={this.toggleMirror}
-                            onCreateAvatar={this.createAvatar}
-                            onUpdateOutput={(output) => this.setState({ output })}
-                            onCreateCharacter={this.createCharacter}
-                            onToggleConfigModal={this.toggleConfigModal}
-                            onUpdateApiConfig={this.updateApiConfig}
-                        />
-                    </Grid.Col>
+    const handleUpdateCharacterInput = (input: string) => {
+        setState(prev => ({
+            ...prev,
+            characterInput: input
+        }));
+    };
 
-                    <Grid.Col span={6}>
-                        <TalksPreview result={this.state.result} />
-                    </Grid.Col>
-                </Grid>
-            </Container>
-        );
-    }
+    const handleToggleCharacterModal = () => {
+        setState(prev => ({
+            ...prev,
+            isCreateCharacterModalOpen: !prev.isCreateCharacterModalOpen
+        }));
+    };
+
+    return (
+        <Container size="xl" py="xl">
+            <Grid>
+                <Grid.Col span={6}>
+                    <TalksForm
+                        state={state}
+                        onUpdateAvatar={handleUpdateAvatar}
+                        onUpdateName={handleUpdateName}
+                        onUpdateDialogue={handleUpdateDialogue}
+                        onUpdateType={handleUpdateType}
+                        onToggleMirror={handleToggleMirror}
+                        onCreateAvatar={handleCreateAvatar}
+                        onUpdateOutput={(output) => setState(prev => ({ ...prev, output }))}
+                        onCreateCharacter={handleCreateCharacter}
+                        onToggleConfigModal={handleToggleConfigModal}
+                        onUpdateApiConfig={handleUpdateApiConfig}
+                        onToggleCharacterModal={handleToggleCharacterModal}
+                        onUpdateCharacterInput={handleUpdateCharacterInput}
+                    />
+                </Grid.Col>
+
+                <Grid.Col span={6}>
+                    <TalksPreview result={state.result} />
+                </Grid.Col>
+            </Grid>
+        </Container>
+    );
 }
 
 export default Talks; 
