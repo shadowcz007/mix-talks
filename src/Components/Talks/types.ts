@@ -52,4 +52,15 @@ export interface TalksState {
     model: string;
     streamResponse: string;
     lastResponse: string;
+    characterPrompt: string;
+    isGeneratingDescription: boolean;
+    newCharacterAvatar?: string;
+    selectedCharacter?: Character;
+}
+
+export interface Character {
+    id: string;
+    name: string;
+    description: string;
+    avatar?: string;
 } 

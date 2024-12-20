@@ -1,8 +1,16 @@
 import React, { useEffect } from 'react';
-import { Paper, Stack, Avatar, Checkbox, MultiSelect, Textarea, Select, Radio, Group, Button, Modal, TextInput } from '@mantine/core';
-import { MdOutlineArrowDownward } from "react-icons/md";
+import { Paper, Stack, Avatar, Checkbox, MultiSelect, Textarea, Select, Radio, Group, Button, Modal, TextInput, Text } from '@mantine/core';
+import { MdOutlineArrowDownward, MdInfo, MdEdit, MdDelete } from "react-icons/md";
 import { TalksState } from './types';
 import { TALK_TYPES } from './constants';
+import CharacterManager from './CharacterManager';
+
+interface Character {
+    id: string;
+    name: string;
+    description: string;
+    avatar?: string;
+}
 
 interface TalksFormProps {
     state: TalksState;
@@ -22,6 +30,11 @@ interface TalksFormProps {
     onUpdateApiUrl?: (url: string) => void;
     onUpdateApiKey?: (key: string) => void;
     onUpdateModel?: (model: string) => void;
+    onGenerateCharacterDescription?: (prompt: string) => Promise<void>;
+    onUpdateCharacterPrompt?: (prompt: string) => void;
+    onSelectCharacter?: (character: Character) => void;
+    onDeleteCharacter?: (id: string) => void;
+    onEditCharacter?: (character: Character) => void;
 }
 
 const TalksForm: React.FC<TalksFormProps> = ({ 
@@ -41,8 +54,16 @@ const TalksForm: React.FC<TalksFormProps> = ({
     onUpdateCharacterDescription,
     onUpdateApiUrl,
     onUpdateApiKey,
-    onUpdateModel
+    onUpdateModel,
+    onGenerateCharacterDescription,
+    onUpdateCharacterPrompt,
+    onSelectCharacter,
+    onDeleteCharacter,
+    onEditCharacter
 }) => {
+    const [characters, setCharacters] = React.useState<Character[]>([]);
+    const [showDescription, setShowDescription] = React.useState(false);
+    
     useEffect(() => {
         // 从 localStorage 加载缓存的头像
         const cachedAvatar = localStorage.getItem('avatar');
@@ -51,33 +72,74 @@ const TalksForm: React.FC<TalksFormProps> = ({
         }
     }, [onUpdateAvatar]);
 
+    useEffect(() => {
+        // 加载角色列表
+        const savedCharacters = JSON.parse(localStorage.getItem('characters') || '[]');
+        setCharacters(savedCharacters);
+    }, []);
+
+    const handleCharacterSelect = (characterId: string) => {
+        const character = characters.find(c => c.id === characterId);
+        if (character) {
+            onSelectCharacter?.(character);
+            onUpdateAvatar(character.avatar || '');
+            onUpdateName(character.name);
+        }
+    };
+
     return (
         <Paper shadow="sm" p="md" radius="md">
             <Stack spacing="md">
-                <Avatar 
-                    size="xl" 
-                    src={state.avatar}
-                    onClick={async () => {
-                        try {
-                            const clipboardItems = await navigator.clipboard.read();
-                            for (const clipboardItem of clipboardItems) {
-                                const imageBlob = clipboardItem.types.includes('image/png') ? await clipboardItem.getType('image/png') : null;
-                                if (imageBlob) {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                        const base64data = reader.result as string;
-                                        onUpdateAvatar(base64data); // 更新头像
-                                        localStorage.setItem('avatar', base64data); // 缓存头像
-                                    };
-                                    reader.readAsDataURL(imageBlob);
-                                }
-                            }
-                        } catch (error) {
-                            console.error('无法从剪切板获取图片:', error);
-                        }
-                    }}
+                <Select
+                    label="选择角色"
+                    data={characters.map(char => ({
+                        value: char.id,
+                        label: char.name
+                    }))}
+                    onChange={handleCharacterSelect}
                 />
                 
+                <Group position="center" spacing="xs">
+                    <Avatar 
+                        size="xl" 
+                        src={state.avatar}
+                        onClick={async () => {
+                            try {
+                                const clipboardItems = await navigator.clipboard.read();
+                                for (const clipboardItem of clipboardItems) {
+                                    const imageBlob = clipboardItem.types.includes('image/png') ? await clipboardItem.getType('image/png') : null;
+                                    if (imageBlob) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            const base64data = reader.result as string;
+                                            onUpdateAvatar(base64data); // 更新头像
+                                            localStorage.setItem('avatar', base64data); // 缓存头像
+                                        };
+                                        reader.readAsDataURL(imageBlob);
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('无法从剪切板获取图片:', error);
+                            }
+                        }}
+                    />
+                    {state.characterDescription && (
+                        <MdInfo 
+                            size={24}
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => setShowDescription(!showDescription)}
+                        />
+                    )}
+                </Group>
+
+                <Modal
+                    opened={showDescription}
+                    onClose={() => setShowDescription(false)}
+                    title={`${state.characterInput}的描述`}
+                >
+                    <Text>{state.characterDescription}</Text>
+                </Modal>
+
                 <Select
                     label="对话类型"
                     value={state.type}
@@ -125,27 +187,19 @@ const TalksForm: React.FC<TalksFormProps> = ({
             <Modal
                 opened={state.isCreateCharacterModalOpen}
                 onClose={onToggleCharacterModal}
-                title="创建新角色"
+                title="角色管理"
             >
-                <Stack>
-                    <TextInput
-                        label="角色名称"
-                        value={state.characterInput}
-                        onChange={(e) => onUpdateCharacterInput?.(e.currentTarget.value)}
-                    />
-                    <Textarea
-                        label="角色描述"
-                        value={state.characterDescription}
-                        onChange={(e) => onUpdateCharacterDescription?.(e.currentTarget.value)}
-                        minRows={3}
-                    />
-                    <Button
-                        onClick={onCreateCharacter}
-                        loading={state.isLoading}
-                    >
-                        确认创建
-                    </Button>
-                </Stack>
+                <CharacterManager 
+                    state={state}
+                    onUpdateAvatar={onUpdateAvatar}
+                    onUpdateCharacterInput={onUpdateCharacterInput}
+                    onUpdateCharacterDescription={onUpdateCharacterDescription}
+                    onUpdateCharacterPrompt={onUpdateCharacterPrompt}
+                    onGenerateCharacterDescription={onGenerateCharacterDescription}
+                    onEditCharacter={onEditCharacter}
+                    onDeleteCharacter={onDeleteCharacter}
+                    onClose={onToggleCharacterModal}
+                />
             </Modal>
 
             <Modal

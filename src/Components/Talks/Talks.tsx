@@ -28,31 +28,40 @@ const Talks: React.FC<TalksProps> = () => {
         apiKey: localStorage.getItem('_api_key') || '',
         model: localStorage.getItem('_model') || '',
         streamResponse: '',
-        lastResponse: ''
+        lastResponse: '',
+        characterPrompt: '', // 添加缺失的属性
+        isGeneratingDescription: false // 添加缺失的属性
     });
 
     useEffect(() => {
-        getDrivingVideos().then(response => {
-            if (response.data && Array.isArray(response.data)) {
+        const fetchDrivingVideos = async () => {
+            try {
+                const response = await getDrivingVideos();
+                if (response.data && Array.isArray(response.data)) {
+                    setState(prev => ({
+                        ...prev,
+                        drivingVideos: response.data as DrivingVideo[]
+                    }));
+                }
+            } catch (error) {
                 setState(prev => ({
                     ...prev,
-                    drivingVideos: response.data as DrivingVideo[]
+                    error: '获取驱动视频失败'
                 }));
             }
-        }).catch(error => {
-            setState(prev => ({
-                ...prev,
-                error: '获取驱动视频失败'
-            }));
-        });
+        };
+
+        fetchDrivingVideos();
     }, []);
 
     const handleUpdateAvatar = (imgurl: string) => {
-        setState(prev => ({
-            ...prev,
-            avatar: imgurl
-        }));
-        localStorage.setItem('_avatar', imgurl);
+        if (imgurl !== state.avatar) {
+            setState(prev => ({
+                ...prev,
+                avatar: imgurl
+            }));
+            localStorage.setItem('_avatar', imgurl);
+        }
     };
 
     const handleUpdateName = (name: string) => {
