@@ -27,6 +27,11 @@ const initialState: TalksState = {
     isGeneratingDescription: false,
     chatHistory: [],
     maxContextSize: 20,
+    currentCharacter: {
+        id: '',
+        name: '',
+        description: ''
+    },
 };
 
 export const useTalksState = () => {

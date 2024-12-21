@@ -5,9 +5,7 @@ import { Character, TalksState } from './types';
 
 interface CharacterManagerProps {
     state: TalksState;
-    onUpdateAvatar: (imgurl: string) => void;
-    onUpdateCharacterInput?: (input: string) => void;
-    onUpdateCharacterDescription?: (desc: string) => void;
+    onUpdateCharacter: (character: Character, field: string) => void;
     onUpdateCharacterPrompt?: (prompt: string) => void;
     onGenerateCharacterDescription?: (prompt: string) => Promise<void>;
     onEditCharacter?: (character: Character) => void;
@@ -18,9 +16,7 @@ interface CharacterManagerProps {
 
 const CharacterManager: React.FC<CharacterManagerProps> = ({
     state,
-    onUpdateAvatar,
-    onUpdateCharacterInput,
-    onUpdateCharacterDescription,
+    onUpdateCharacter,
     onUpdateCharacterPrompt,
     onGenerateCharacterDescription,
     onEditCharacter,
@@ -28,19 +24,22 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
     onClose,
     onCreateCharacter
 }) => {
-  
+
 
     const handlePasteAvatar = async () => {
         try {
             const clipboardItems = await navigator.clipboard.read();
             for (const clipboardItem of clipboardItems) {
-                const imageBlob = clipboardItem.types.includes('image/png') ? 
+                const imageBlob = clipboardItem.types.includes('image/png') ?
                     await clipboardItem.getType('image/png') : null;
                 if (imageBlob) {
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         const base64data = reader.result as string;
-                        onUpdateAvatar(base64data);
+                        onUpdateCharacter({
+                            ...state.currentCharacter,
+                            avatar: base64data,
+                        }, 'avatar');
                     };
                     reader.readAsDataURL(imageBlob);
                 }
@@ -53,8 +52,8 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
     return (
         <Stack>
             <Group position="center">
-                <Avatar 
-                    size="xl" 
+                <Avatar
+                    size="xl"
                     src={state.newCharacterAvatar}
                     onClick={handlePasteAvatar}
                 />
@@ -64,16 +63,14 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
                 <Group key={char.id} position="apart">
                     <Text>{char.name}</Text>
                     <Group spacing="xs">
-                        <MdEdit 
+                        <MdEdit
                             style={{ cursor: 'pointer' }}
                             onClick={() => {
-                                onUpdateCharacterInput?.(char.name);
-                                onUpdateCharacterDescription?.(char.description);
-                                onUpdateAvatar(char.avatar || '');
+                                onUpdateCharacter?.(char, 'name');
                                 onEditCharacter?.(char);
                             }}
                         />
-                        <MdDelete 
+                        <MdDelete
                             style={{ cursor: 'pointer' }}
                             onClick={() => {
                                 onDeleteCharacter?.(char.id);
@@ -85,8 +82,14 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
 
             <TextInput
                 label="角色名称"
-                value={state.characterInput}
-                onChange={(e) => onUpdateCharacterInput?.(e.currentTarget.value)}
+                value={state.currentCharacter?.name || ''}
+                onChange={(e) => onUpdateCharacter(
+                    {
+                        ...state.currentCharacter,
+                        name: e.currentTarget.value,
+                    },
+                    'name'
+                )}
             />
             <Textarea
                 label="角色描述指令"
@@ -112,15 +115,32 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
             <Textarea
                 label="角色描述"
                 value={state.characterDescription}
-                onChange={(e) => onUpdateCharacterDescription?.(e.currentTarget.value)}
+                onChange={(e) => onUpdateCharacter?.(
+                    {
+                        ...state.currentCharacter,
+                        description: e.currentTarget.value,
+                    },
+                    'description'
+                )}
                 placeholder="AI生成的角色描述将显示在这里，您也可以直接编辑"
                 minRows={3}
                 autosize
                 maxRows={10}
             />
             <Button
-                onClick={onCreateCharacter}
+                onClick={() => {
+                    if (!state.currentCharacter?.name) {
+                        alert('请输入角色名称');
+                        return;
+                    }
+                    if (!state.currentCharacter?.description) {
+                        alert('请输入角色描述');
+                        return;
+                    }
+                    onCreateCharacter?.();
+                }}
                 loading={state.isLoading}
+                disabled={!state.currentCharacter?.name || !state.currentCharacter?.description || state.isLoading}
             >
                 确认创建
             </Button>

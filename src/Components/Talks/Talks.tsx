@@ -142,9 +142,10 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
     };
 
     const handleCreateCharacter = async () => {
+        console.log('Creating new character:', state);
         try {
             // 检查必要的输入
-            if (!state.characterInput.trim()) {
+            if (!state.currentCharacter?.name?.trim()) {
                 setState(prev => ({
                     ...prev,
                     error: '请输入角色名称'
@@ -152,7 +153,7 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
                 return;
             }
 
-            if (!state.characterDescription.trim()) {
+            if (!state.currentCharacter?.description?.trim()) {
                 setState(prev => ({
                     ...prev,
                     error: '请先生成角色描述'
@@ -165,8 +166,8 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
             setState(prev => {
                 const newCharacter: Character = {
                     id: crypto.randomUUID(),
-                    name: prev.characterInput.trim(),
-                    description: prev.characterDescription.trim()
+                    name: prev.currentCharacter.name.trim(),
+                    description: prev.currentCharacter.description.trim()
                 };
 
                 console.log('Creating new character:', newCharacter);
@@ -220,7 +221,12 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
         setState(prev => ({ ...prev, characterInput: input }));
     };
     const handleUpdateCharacterDescription = (description: string) => {
-        setState(prev => ({ ...prev, characterDescription: description }));
+        // 历史记录 
+        const assistantMessage: ChatMessage = { role: "assistant", content: description };
+        const userMessage: ChatMessage = { role: "user", content: description };
+        const newHistory = [...state.chatHistory, userMessage, assistantMessage]
+            .slice(-state.maxContextSize);
+        setState(prev => ({ ...prev, chatHistory: newHistory, characterDescription: description }));
     };
     const handleToggleCharacterModal = () => {
         setState(prev => ({
@@ -271,7 +277,12 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
         }));
     };
 
-
+    const handleUpdateCharacter = (character: Character, field: string) => {
+        setState(prev => ({
+            ...prev,
+            currentCharacter: character
+        }));
+    };
 
     return (
         <Container size="xl" py="xl">
@@ -297,8 +308,7 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
                         onUpdateCharacterPrompt={handleUpdateCharacterPrompt}
                         onGenerateCharacterDescription={handleGenerateCharacterDescription}
                         onSelectCharacter={handleSelectCharacter}
-
-
+                        onUpdateCharacter={handleUpdateCharacter}
                     />
                 </Grid.Col>
                 <Grid.Col span={6}>

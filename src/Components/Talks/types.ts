@@ -54,6 +54,7 @@ export interface TalksState {
     selectedCharacter?: Character;
     chatHistory: ChatMessage[];
     maxContextSize: number;
+    currentCharacter: Character;
 }
 
 export interface Character {

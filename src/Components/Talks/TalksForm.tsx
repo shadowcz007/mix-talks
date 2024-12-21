@@ -7,7 +7,8 @@ import CharacterManager from './CharacterManager';
 
 interface TalksFormProps {
     state: TalksState;
-    onUpdateAvatar: (imgurl: string) => void;
+    onUpdateCharacter: (character: Character, field: string) => void;
+    onUpdateAvatar: (avatar: string) => void;
     onUpdateName: (name: string) => void;
     onUpdateDialogue: (dialogue: string) => void;
     onUpdateType: (type: string) => void;
@@ -32,6 +33,7 @@ interface TalksFormProps {
 
 const TalksForm: React.FC<TalksFormProps> = ({
     state,
+    onUpdateCharacter,
     onUpdateAvatar,
     onUpdateName,
     onUpdateDialogue,
@@ -57,13 +59,7 @@ const TalksForm: React.FC<TalksFormProps> = ({
     const [characters, setCharacters] = React.useState<Character[]>([]);
     const [showDescription, setShowDescription] = React.useState(false);
 
-    useEffect(() => {
-        // 从 localStorage 加载缓存的头像
-        const cachedAvatar = localStorage.getItem('avatar');
-        if (cachedAvatar) {
-            onUpdateAvatar(cachedAvatar);
-        }
-    }, [onUpdateAvatar]);
+  
 
     useEffect(() => {
         // 加载角色列表
@@ -175,10 +171,8 @@ const TalksForm: React.FC<TalksFormProps> = ({
                 title="角色管理"
             >
                 <CharacterManager
-                    state={state}
-                    onUpdateAvatar={onUpdateAvatar}
-                    onUpdateCharacterInput={onUpdateCharacterInput}
-                    onUpdateCharacterDescription={onUpdateCharacterDescription}
+                    state={state} 
+                    onUpdateCharacter={onUpdateCharacter} 
                     onUpdateCharacterPrompt={onUpdateCharacterPrompt}
                     onGenerateCharacterDescription={onGenerateCharacterDescription}
                     onEditCharacter={onEditCharacter}
