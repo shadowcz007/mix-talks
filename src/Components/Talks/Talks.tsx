@@ -1,112 +1,45 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Container, Grid } from '@mantine/core';
-import { TalksProps, TalksState, DrivingVideo, Character } from './types';
-import { createAvatarGif, getDrivingVideos } from './api/talkApi';
-import { createBaseHtml } from './utils/htmlGenerators';
+import { Character, ChatMessage } from './types';
 import TalksForm from './TalksForm';
 import TalksPreview from './TalksPreview';
-import { AiApi } from './api/aiApi';
+import { useTalksState } from './hooks/useTalksState';
+import { TalksService } from './services/talksService';
+import { StorageUtil, StorageKeys } from './utils/storage';
 
-const Talks: React.FC<TalksProps> = () => {
-    const [state, setState] = useState<TalksState>({
-        avatar: localStorage.getItem('_avatar') || '',
-        name: localStorage.getItem('_name') || '',
-        dialogue: localStorage.getItem('_dialogue') || '',
-        names: JSON.parse(localStorage.getItem('names') || '[]'),
-        type: localStorage.getItem('_type') || 'left',
-        result: '',
-        drivingVideos: [],
-        output: 'gif',
-        isMirror: false,
-        error: null,
-        isCreateCharacterModalOpen: false,
-        characterInput: '',
-        characterDescription: '',
-        characters: JSON.parse(localStorage.getItem('characters') || '[]'),
-        isLoading: false,
-        isConfigModalOpen: false,
-        apiUrl: localStorage.getItem('_api_url') || '',
-        apiKey: localStorage.getItem('_api_key') || '',
-        model: localStorage.getItem('_model') || '',
-        streamResponse: '',
-        lastResponse: '',
-        characterPrompt: '',
-        isGeneratingDescription: false,
-        chatHistory: [],
-        maxContextSize: 20,
-    });
+interface TalksProps {
+    talkColors: string[];
+}
+
+const Talks: React.FC<TalksProps> = ({ talkColors }) => {
+    const { state, setState } = useTalksState();
 
     useEffect(() => {
         const fetchDrivingVideos = async () => {
             try {
-                const response = await getDrivingVideos();
-                if (response.data && Array.isArray(response.data)) {
-                    setState(prev => ({
-                        ...prev,
-                        drivingVideos: response.data as DrivingVideo[]
-                    }));
-                }
+                const videos = await TalksService.fetchDrivingVideos();
+                setState(prev => ({ ...prev, drivingVideos: videos }));
             } catch (error) {
-                setState(prev => ({
-                    ...prev,
-                    error: '获取驱动视频失败'
-                }));
+                setState(prev => ({ ...prev, error: '获取驱动视频失败' }));
             }
         };
 
         fetchDrivingVideos();
     }, []);
 
+    // 事件处理函数
     const handleUpdateAvatar = (imgurl: string) => {
         if (imgurl !== state.avatar) {
-            setState(prev => ({
-                ...prev,
-                avatar: imgurl
-            }));
-            localStorage.setItem('_avatar', imgurl);
+            setState(prev => ({ ...prev, avatar: imgurl }));
+            StorageUtil.setItem(StorageKeys.AVATAR, imgurl);
         }
-    };
-
-    const handleUpdateName = (name: string) => {
-        setState(prev => ({
-            ...prev,
-            name
-        }));
-        localStorage.setItem('_name', name);
-    };
-
-    const handleUpdateDialogue = (dialogue: string) => {
-        setState(prev => ({
-            ...prev,
-            dialogue
-        }));
-        localStorage.setItem('_dialogue', dialogue);
-    };
-
-    const handleUpdateType = (type: string) => {
-        setState(prev => ({
-            ...prev,
-            type
-        }));
-        localStorage.setItem('_type', type);
-    };
-
-    const handleToggleMirror = () => {
-        setState(prev => ({
-            ...prev,
-            isMirror: !prev.isMirror
-        }));
     };
 
     const handleCreateAvatar = async () => {
         try {
-            setState(prev => ({
-                ...prev,
-                isLoading: true
-            }));
-
+            setState(prev => ({ ...prev, isLoading: true }));
             if (state.avatar) {
-                const html = await createBaseHtml(
+                const html = await TalksService.createAvatar(
                     state.avatar,
                     state.type,
                     state.name,
@@ -114,7 +47,6 @@ const Talks: React.FC<TalksProps> = () => {
                 );
                 setState(prev => ({
                     ...prev,
-                    avatar: state.avatar,
                     result: html,
                     isLoading: false
                 }));
@@ -128,25 +60,95 @@ const Talks: React.FC<TalksProps> = () => {
         }
     };
 
-    const handleCreateCharacter = async () => {
+    const handleGenerateCharacterDescription = async (prompt: string) => {
         try {
             setState(prev => ({
                 ...prev,
-                isLoading: true
-            })); 
-            // 更新角色列表
-            setState(prev => ({
-                ...prev,
-                characters: [...prev.characters, {
-                    name: prev.characterInput,
-                    description: prev.characterDescription
-                }],
-                characterInput: '',
-                characterDescription: '',
-                isCreateCharacterModalOpen: false,
-                isLoading: false
+                isGeneratingDescription: true,
+                characterDescription: ''
             }));
 
+            await TalksService.generateCharacterDescription(
+                prompt,
+                state.apiUrl,
+                state.apiKey,
+                state.model,
+                {
+                    onToken: (content) => {
+                        setState(prev => ({
+                            ...prev,
+                            characterDescription: prev.characterDescription + content
+                        }));
+                    },
+                    onError: (error) => {
+                        setState(prev => ({
+                            ...prev,
+                            error: '生成角色描述失败',
+                            isGeneratingDescription: false
+                        }));
+                    },
+                    onFinish: () => {
+                        setState(prev => {
+                            const assistantMessage: ChatMessage = { role: "assistant", content: prev.characterDescription };
+                            const userMessage: ChatMessage = { role: "user", content: prompt };
+                            const newHistory = [...prev.chatHistory, userMessage, assistantMessage]
+                                .slice(-prev.maxContextSize);
+                            return {
+                                ...prev,
+                                isGeneratingDescription: false,
+                                chatHistory: newHistory
+                            };
+                        });
+                    }
+                },
+                state.chatHistory
+            );
+        } catch (error) {
+            setState(prev => ({
+                ...prev,
+                error: '生成角色描述失败',
+                isGeneratingDescription: false
+            }));
+        }
+    };
+
+    const handleUpdateName = (name: string) => {
+        setState(prev => ({ ...prev, name }));
+        StorageUtil.setItem(StorageKeys.NAME, name);
+    };
+
+    const handleUpdateDialogue = (dialogue: string) => {
+        setState(prev => ({ ...prev, dialogue }));
+        StorageUtil.setItem(StorageKeys.DIALOGUE, dialogue);
+    };
+
+    const handleUpdateType = (type: string) => {
+        setState(prev => ({ ...prev, type }));
+        StorageUtil.setItem(StorageKeys.TYPE, type);
+    };
+
+    const handleToggleMirror = () => {
+        setState(prev => ({ ...prev, isMirror: !prev.isMirror }));
+    };
+
+    const handleCreateCharacter = async () => {
+        try {
+            setState(prev => ({ ...prev, isLoading: true }));
+            setState(prev => {
+                const newCharacters = [...prev.characters, {
+                    name: prev.characterInput,
+                    description: prev.characterDescription
+                }];
+                StorageUtil.setObject(StorageKeys.CHARACTERS, newCharacters);
+                return {
+                    ...prev,
+                    characters: newCharacters,
+                    characterInput: '',
+                    characterDescription: '',
+                    isCreateCharacterModalOpen: false,
+                    isLoading: false
+                };
+            });
         } catch (error) {
             setState(prev => ({
                 ...prev,
@@ -164,25 +166,20 @@ const Talks: React.FC<TalksProps> = () => {
     };
 
     const handleUpdateApiConfig = (apiUrl: string, apiKey: string, model: string) => {
-        setState(prev => ({ 
+        setState(prev => ({
             ...prev,
             apiUrl,
             apiKey,
             model,
-            isConfigModalOpen: false 
+            isConfigModalOpen: false
         }));
-        
-        // 保存到localStorage
-        localStorage.setItem('_api_url', apiUrl);
-        localStorage.setItem('_api_key', apiKey);
-        localStorage.setItem('_model', model);
+        StorageUtil.setItem(StorageKeys.API_URL, apiUrl);
+        StorageUtil.setItem(StorageKeys.API_KEY, apiKey);
+        StorageUtil.setItem(StorageKeys.MODEL, model);
     };
 
     const handleUpdateCharacterInput = (input: string) => {
-        setState(prev => ({
-            ...prev,
-            characterInput: input
-        }));
+        setState(prev => ({ ...prev, characterInput: input }));
     };
 
     const handleToggleCharacterModal = () => {
@@ -194,11 +191,10 @@ const Talks: React.FC<TalksProps> = () => {
 
     const handleEditCharacter = (character: Character) => {
         setState(prev => {
-            const updatedCharacters = prev.characters.map((c:any) => 
+            const updatedCharacters = prev.characters.map((c: any) =>
                 c.id === character.id ? character : c
             );
-            // 保存到 localStorage
-            localStorage.setItem('characters', JSON.stringify(updatedCharacters));
+            StorageUtil.setObject(StorageKeys.CHARACTERS, updatedCharacters);
             return {
                 ...prev,
                 characters: updatedCharacters
@@ -207,79 +203,23 @@ const Talks: React.FC<TalksProps> = () => {
     };
 
     const handleDeleteCharacter = (id: string) => {
-        setState(prev => ({
-            ...prev,
-            characters: prev.characters.filter((c:any) => c.id !== id)
-        }));
-        
-        // 同步更新到 localStorage
-        const updatedCharacters = state.characters.filter((c:any) => c.id !== id);
-        localStorage.setItem('characters', JSON.stringify(updatedCharacters));
+        setState(prev => {
+            const updatedCharacters = prev.characters.filter((c: any) => c.id !== id);
+            StorageUtil.setObject(StorageKeys.CHARACTERS, updatedCharacters);
+            return {
+                ...prev,
+                characters: updatedCharacters
+            };
+        });
     };
 
     const handleUpdateCharacterPrompt = (prompt: string) => {
-        setState(prev => ({
-            ...prev,
-            characterPrompt: prompt
-        }));
+        setState(prev => ({ ...prev, characterPrompt: prompt }));
     };
 
-    const handleGenerateCharacterDescription = async (prompt: string) => {
-        try {
-            setState(prev => ({
-                ...prev,
-                isGeneratingDescription: true,
-                characterDescription: ''
-            }));
-
-            const aiApi = new AiApi(state.apiUrl, state.apiKey, state.model);
-            
-            // 添加新的用户消息到历史记录
-            const newMessage = { role: 'user', content: prompt };
-            const updatedHistory = [...state.chatHistory, newMessage].slice(-state.maxContextSize);
-            
-            setState(prev => ({
-                ...prev,
-                chatHistory: updatedHistory
-            }));
-
-            await aiApi.generateCharacterDescription(prompt, {
-                onToken: (content) => {
-                    setState(prev => ({
-                        ...prev,
-                        characterDescription: prev.characterDescription + content
-                    }));
-                },
-                onError: (error) => {
-                    console.error('生成角色描述失败:', error);
-                    setState(prev => ({
-                        ...prev,
-                        error: '生成角色描述失败',
-                        isGeneratingDescription: false
-                    }));
-                },
-                onFinish: () => {
-                    // 将AI响应添加到历史记录
-                    setState(prev => {
-                        const assistantMessage = { role: 'assistant', content: prev.characterDescription };
-                        const newHistory = [...prev.chatHistory, assistantMessage].slice(-prev.maxContextSize);
-                        return {
-                            ...prev,
-                            isGeneratingDescription: false,
-                            chatHistory: newHistory
-                        };
-                    });
-                }
-            });
-
-        } catch (error) {
-            console.error('生成角色描述失败:', error);
-            setState(prev => ({
-                ...prev,
-                error: '生成角色描述失败',
-                isGeneratingDescription: false
-            }));
-        }
+    const handleUpdateOutput = (output: "gif" | "mp4") => {
+        setState(prev => ({ ...prev, output }));
+        StorageUtil.setItem(StorageKeys.OUTPUT, output);
     };
 
     return (
@@ -294,7 +234,7 @@ const Talks: React.FC<TalksProps> = () => {
                         onUpdateType={handleUpdateType}
                         onToggleMirror={handleToggleMirror}
                         onCreateAvatar={handleCreateAvatar}
-                        onUpdateOutput={(output) => setState(prev => ({ ...prev, output }))}
+                        onUpdateOutput={handleUpdateOutput}
                         onCreateCharacter={handleCreateCharacter}
                         onToggleConfigModal={handleToggleConfigModal}
                         onUpdateApiConfig={handleUpdateApiConfig}
@@ -306,13 +246,12 @@ const Talks: React.FC<TalksProps> = () => {
                         onGenerateCharacterDescription={handleGenerateCharacterDescription}
                     />
                 </Grid.Col>
-
                 <Grid.Col span={6}>
                     <TalksPreview result={state.result} />
                 </Grid.Col>
             </Grid>
         </Container>
     );
-}
+};
 
 export default Talks; 

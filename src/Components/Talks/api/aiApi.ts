@@ -84,12 +84,13 @@ export class AiApi {
     }
 
     // 生成角色描述的专用方法
-    async generateCharacterDescription(prompt: string, callbacks: StreamCallbacks) {
+    async generateCharacterDescription(prompt: string,history:ChatMessage[], callbacks: StreamCallbacks) {
         const messages = [
             {
                 role: "system",
                 content: "你是一个角色设定助手,可以根据用户的要求创建详细的角色描述。只输出角色描述，不要输出任何其他内容。如果用户的指令不清晰，请让用户补充具体细节，给出明确的提示"
             },
+            ...history,
             {
                 role: "user",
                 content: prompt
