@@ -13,6 +13,7 @@ interface CharacterManagerProps {
     onEditCharacter?: (character: Character) => void;
     onDeleteCharacter?: (id: string) => void;
     onClose: () => void;
+    onCreateCharacter?: () => void;
 }
 
 const CharacterManager: React.FC<CharacterManagerProps> = ({
@@ -24,20 +25,10 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
     onGenerateCharacterDescription,
     onEditCharacter,
     onDeleteCharacter,
-    onClose
+    onClose,
+    onCreateCharacter
 }) => {
-    const handleCreateCharacter = () => {
-        const newCharacter = {
-            id: Date.now().toString(),
-            name: state.characterInput,
-            description: state.characterDescription,
-            avatar: state.newCharacterAvatar
-        };
-        
-        const updatedCharacters = [...state.characters, newCharacter];
-        localStorage.setItem('characters', JSON.stringify(updatedCharacters));
-        onClose();
-    };
+  
 
     const handlePasteAvatar = async () => {
         try {
@@ -128,7 +119,7 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
                 maxRows={10}
             />
             <Button
-                onClick={handleCreateCharacter}
+                onClick={onCreateCharacter}
                 loading={state.isLoading}
             >
                 确认创建

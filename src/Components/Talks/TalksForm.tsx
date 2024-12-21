@@ -184,6 +184,7 @@ const TalksForm: React.FC<TalksFormProps> = ({
                     onEditCharacter={onEditCharacter}
                     onDeleteCharacter={onDeleteCharacter}
                     onClose={onToggleCharacterModal}
+                    onCreateCharacter={onCreateCharacter}
                 />
             </Modal>
 

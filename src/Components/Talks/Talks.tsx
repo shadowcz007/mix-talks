@@ -161,7 +161,7 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
             }
 
             setState(prev => ({ ...prev, isLoading: true }));
-            
+
             setState(prev => {
                 const newCharacter: Character = {
                     id: crypto.randomUUID(),
@@ -172,10 +172,10 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
                 console.log('Creating new character:', newCharacter);
 
                 const newCharacters = [...prev.characters, newCharacter];
-                
+
                 // 保存到本地存储
                 StorageUtil.setObject(StorageKeys.CHARACTERS, newCharacters);
-                
+
                 return {
                     ...prev,
                     characters: newCharacters,
@@ -219,7 +219,9 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
     const handleUpdateCharacterInput = (input: string) => {
         setState(prev => ({ ...prev, characterInput: input }));
     };
-
+    const handleUpdateCharacterDescription = (description: string) => {
+        setState(prev => ({ ...prev, characterDescription: description }));
+    };
     const handleToggleCharacterModal = () => {
         setState(prev => ({
             ...prev,
@@ -269,6 +271,8 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
         }));
     };
 
+
+
     return (
         <Container size="xl" py="xl">
             <Grid>
@@ -287,11 +291,14 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
                         onUpdateApiConfig={handleUpdateApiConfig}
                         onToggleCharacterModal={handleToggleCharacterModal}
                         onUpdateCharacterInput={handleUpdateCharacterInput}
+                        onUpdateCharacterDescription={handleUpdateCharacterDescription}
                         onEditCharacter={handleEditCharacter}
                         onDeleteCharacter={handleDeleteCharacter}
                         onUpdateCharacterPrompt={handleUpdateCharacterPrompt}
                         onGenerateCharacterDescription={handleGenerateCharacterDescription}
                         onSelectCharacter={handleSelectCharacter}
+
+
                     />
                 </Grid.Col>
                 <Grid.Col span={6}>
