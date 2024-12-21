@@ -74,7 +74,10 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
             setState(prev => ({
                 ...prev,
                 isGeneratingDescription: true,
-                characterDescription: ''
+                currentCharacter: {
+                    ...state.currentCharacter,
+                    description: ''
+                }
             }));
 
             await TalksService.generateCharacterDescription(
@@ -86,7 +89,10 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
                     onToken: (content) => {
                         setState(prev => ({
                             ...prev,
-                            characterDescription: prev.characterDescription + content
+                            currentCharacter: {
+                                ...state.currentCharacter,
+                                description: prev.currentCharacter.description + content
+                            }
                         }));
                     },
                     onError: (error) => {
@@ -98,7 +104,7 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
                     },
                     onFinish: () => {
                         setState(prev => {
-                            const assistantMessage: ChatMessage = { role: "assistant", content: prev.characterDescription };
+                            const assistantMessage: ChatMessage = { role: "assistant", content:prev.currentCharacter.description };
                             const userMessage: ChatMessage = { role: "user", content: prompt };
                             const newHistory = [...prev.chatHistory, userMessage, assistantMessage]
                                 .slice(-prev.maxContextSize);
@@ -106,7 +112,10 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
                                 ...prev,
                                 isGeneratingDescription: false,
                                 chatHistory: newHistory,
-                                characterDescription: prev.characterDescription
+                                currentCharacter: {
+                                    ...state.currentCharacter,
+                                    description: prev.currentCharacter.description
+                                }
                             };
                         });
                     }
@@ -277,11 +286,21 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
         }));
     };
 
-    const handleUpdateCharacter = (character: Character, field: string) => {
-        setState(prev => ({
-            ...prev,
-            currentCharacter: character
-        }));
+    const handleUpdateCharacter = (character: any, field: string) => {
+        if (field === 'all') {
+            setState(prev => ({
+                ...prev,
+                currentCharacter: character
+            }));
+        } else {
+            setState(prev => ({
+                ...prev,
+                currentCharacter: {
+                    ...prev.currentCharacter,
+                    [field]: character[field]
+                }
+            }));
+        }
     };
 
     return (

@@ -66,7 +66,7 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
                         <MdEdit
                             style={{ cursor: 'pointer' }}
                             onClick={() => {
-                                onUpdateCharacter?.(char, 'name');
+                                onUpdateCharacter?.(char, 'all');
                                 onEditCharacter?.(char);
                             }}
                         />
@@ -114,7 +114,7 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
             </Button>
             <Textarea
                 label="角色描述"
-                value={state.characterDescription}
+                value={state.currentCharacter.description}
                 onChange={(e) => onUpdateCharacter?.(
                     {
                         ...state.currentCharacter,
