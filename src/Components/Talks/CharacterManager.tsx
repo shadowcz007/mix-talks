@@ -26,13 +26,6 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
     onDeleteCharacter,
     onClose
 }) => {
-    const [characters, setCharacters] = React.useState<Character[]>([]);
-
-    React.useEffect(() => {
-        const savedCharacters = JSON.parse(localStorage.getItem('characters') || '[]');
-        setCharacters(savedCharacters);
-    }, []);
-
     const handleCreateCharacter = () => {
         const newCharacter = {
             id: Date.now().toString(),
@@ -41,9 +34,8 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
             avatar: state.newCharacterAvatar
         };
         
-        const updatedCharacters = [...characters, newCharacter];
+        const updatedCharacters = [...state.characters, newCharacter];
         localStorage.setItem('characters', JSON.stringify(updatedCharacters));
-        setCharacters(updatedCharacters);
         onClose();
     };
 
@@ -77,7 +69,7 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
                 />
             </Group>
 
-            {characters.map((char:any) => (
+            {state.characters.map((char: Character) => (
                 <Group key={char.id} position="apart">
                     <Text>{char.name}</Text>
                     <Group spacing="xs">
@@ -87,17 +79,14 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
                                 onUpdateCharacterInput?.(char.name);
                                 onUpdateCharacterDescription?.(char.description);
                                 onUpdateAvatar(char.avatar || '');
-                                onEditCharacter?.({
-                                    id: char.id,
-                                    name: char.name,
-                                    description: char.description,
-                                    avatar: char.avatar
-                                });
+                                onEditCharacter?.(char);
                             }}
                         />
                         <MdDelete 
                             style={{ cursor: 'pointer' }}
-                            onClick={() => onDeleteCharacter?.(char.id)}
+                            onClick={() => {
+                                onDeleteCharacter?.(char.id);
+                            }}
                         />
                     </Group>
                 </Group>

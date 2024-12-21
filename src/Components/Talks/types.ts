@@ -40,11 +40,7 @@ export interface TalksState {
     isCreateCharacterModalOpen: boolean;
     characterInput: string;
     characterDescription: string;
-    characters: Array<{
-        name: string;
-        description: string;
-        avatar?: string;
-    }>;
+    characters: Character[];
     isLoading: boolean;
     isConfigModalOpen: boolean;
     apiUrl: string;

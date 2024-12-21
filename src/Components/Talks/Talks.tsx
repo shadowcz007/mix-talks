@@ -27,6 +27,15 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
         fetchDrivingVideos();
     }, []);
 
+    useEffect(() => {
+        // 从本地存储加载已保存的角色
+        const savedCharacters = StorageUtil.getObject<Character[]>(StorageKeys.CHARACTERS, []);
+        setState(prev => ({
+            ...prev,
+            characters: savedCharacters
+        }));
+    }, []);
+
     // 事件处理函数
     const handleUpdateAvatar = (imgurl: string) => {
         if (imgurl !== state.avatar) {
@@ -96,7 +105,8 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
                             return {
                                 ...prev,
                                 isGeneratingDescription: false,
-                                chatHistory: newHistory
+                                chatHistory: newHistory,
+                                characterDescription: prev.characterDescription
                             };
                         });
                     }
@@ -133,23 +143,51 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
 
     const handleCreateCharacter = async () => {
         try {
+            // 检查必要的输入
+            if (!state.characterInput.trim()) {
+                setState(prev => ({
+                    ...prev,
+                    error: '请输入角色名称'
+                }));
+                return;
+            }
+
+            if (!state.characterDescription.trim()) {
+                setState(prev => ({
+                    ...prev,
+                    error: '请先生成角色描述'
+                }));
+                return;
+            }
+
             setState(prev => ({ ...prev, isLoading: true }));
+            
             setState(prev => {
-                const newCharacters = [...prev.characters, {
-                    name: prev.characterInput,
-                    description: prev.characterDescription
-                }];
+                const newCharacter: Character = {
+                    id: crypto.randomUUID(),
+                    name: prev.characterInput.trim(),
+                    description: prev.characterDescription.trim()
+                };
+
+                console.log('Creating new character:', newCharacter);
+
+                const newCharacters = [...prev.characters, newCharacter];
+                
+                // 保存到本地存储
                 StorageUtil.setObject(StorageKeys.CHARACTERS, newCharacters);
+                
                 return {
                     ...prev,
                     characters: newCharacters,
                     characterInput: '',
                     characterDescription: '',
                     isCreateCharacterModalOpen: false,
-                    isLoading: false
+                    isLoading: false,
+                    error: null
                 };
             });
         } catch (error) {
+            console.error('Error creating character:', error);
             setState(prev => ({
                 ...prev,
                 error: '创建角色失败',
@@ -204,7 +242,7 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
 
     const handleDeleteCharacter = (id: string) => {
         setState(prev => {
-            const updatedCharacters = prev.characters.filter((c: any) => c.id !== id);
+            const updatedCharacters = prev.characters.filter((character: any) => character.id !== id);
             StorageUtil.setObject(StorageKeys.CHARACTERS, updatedCharacters);
             return {
                 ...prev,
@@ -220,6 +258,15 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
     const handleUpdateOutput = (output: "gif" | "mp4") => {
         setState(prev => ({ ...prev, output }));
         StorageUtil.setItem(StorageKeys.OUTPUT, output);
+    };
+
+    const handleSelectCharacter = (character: Character) => {
+        setState(prev => ({
+            ...prev,
+            characterInput: character.name,
+            characterDescription: character.description,
+            isCreateCharacterModalOpen: false
+        }));
     };
 
     return (
@@ -244,6 +291,7 @@ const Talks: React.FC<TalksProps> = ({ talkColors }) => {
                         onDeleteCharacter={handleDeleteCharacter}
                         onUpdateCharacterPrompt={handleUpdateCharacterPrompt}
                         onGenerateCharacterDescription={handleGenerateCharacterDescription}
+                        onSelectCharacter={handleSelectCharacter}
                     />
                 </Grid.Col>
                 <Grid.Col span={6}>

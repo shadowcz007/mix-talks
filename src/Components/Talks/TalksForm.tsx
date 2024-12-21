@@ -72,7 +72,7 @@ const TalksForm: React.FC<TalksFormProps> = ({
     }, []);
 
     const handleCharacterSelect = (characterId: string) => {
-        const character = characters.find(c => c.id === characterId);
+        const character:any = characters.find(c => c.id === characterId);
         if (character) {
             onSelectCharacter?.(character);
             onUpdateAvatar(character.avatar || '');
