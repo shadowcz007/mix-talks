@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Grid } from '@mantine/core';
-import { TalksProps, TalksState, DrivingVideo } from './types';
+import { TalksProps, TalksState, DrivingVideo, Character } from './types';
 import { createAvatarGif, getDrivingVideos } from './api/talkApi';
 import { createBaseHtml } from './utils/htmlGenerators';
 import TalksForm from './TalksForm';
 import TalksPreview from './TalksPreview';
+import { AiApi } from './api/aiApi';
 
 const Talks: React.FC<TalksProps> = () => {
     const [state, setState] = useState<TalksState>({
@@ -21,7 +22,7 @@ const Talks: React.FC<TalksProps> = () => {
         isCreateCharacterModalOpen: false,
         characterInput: '',
         characterDescription: '',
-        characters: [],
+        characters: JSON.parse(localStorage.getItem('characters') || '[]'),
         isLoading: false,
         isConfigModalOpen: false,
         apiUrl: localStorage.getItem('_api_url') || '',
@@ -29,8 +30,10 @@ const Talks: React.FC<TalksProps> = () => {
         model: localStorage.getItem('_model') || '',
         streamResponse: '',
         lastResponse: '',
-        characterPrompt: '', // 添加缺失的属性
-        isGeneratingDescription: false // 添加缺失的属性
+        characterPrompt: '',
+        isGeneratingDescription: false,
+        chatHistory: [],
+        maxContextSize: 20,
     });
 
     useEffect(() => {
@@ -130,14 +133,7 @@ const Talks: React.FC<TalksProps> = () => {
             setState(prev => ({
                 ...prev,
                 isLoading: true
-            }));
-            
-            // 这里添加创建角色的API调用
-            // const response = await createCharacterApi({
-            //     name: this.state.characterInput,
-            //     description: this.state.characterDescription
-            // });
-
+            })); 
             // 更新角色列表
             setState(prev => ({
                 ...prev,
@@ -196,6 +192,96 @@ const Talks: React.FC<TalksProps> = () => {
         }));
     };
 
+    const handleEditCharacter = (character: Character) => {
+        setState(prev => {
+            const updatedCharacters = prev.characters.map((c:any) => 
+                c.id === character.id ? character : c
+            );
+            // 保存到 localStorage
+            localStorage.setItem('characters', JSON.stringify(updatedCharacters));
+            return {
+                ...prev,
+                characters: updatedCharacters
+            };
+        });
+    };
+
+    const handleDeleteCharacter = (id: string) => {
+        setState(prev => ({
+            ...prev,
+            characters: prev.characters.filter((c:any) => c.id !== id)
+        }));
+        
+        // 同步更新到 localStorage
+        const updatedCharacters = state.characters.filter((c:any) => c.id !== id);
+        localStorage.setItem('characters', JSON.stringify(updatedCharacters));
+    };
+
+    const handleUpdateCharacterPrompt = (prompt: string) => {
+        setState(prev => ({
+            ...prev,
+            characterPrompt: prompt
+        }));
+    };
+
+    const handleGenerateCharacterDescription = async (prompt: string) => {
+        try {
+            setState(prev => ({
+                ...prev,
+                isGeneratingDescription: true,
+                characterDescription: ''
+            }));
+
+            const aiApi = new AiApi(state.apiUrl, state.apiKey, state.model);
+            
+            // 添加新的用户消息到历史记录
+            const newMessage = { role: 'user', content: prompt };
+            const updatedHistory = [...state.chatHistory, newMessage].slice(-state.maxContextSize);
+            
+            setState(prev => ({
+                ...prev,
+                chatHistory: updatedHistory
+            }));
+
+            await aiApi.generateCharacterDescription(prompt, {
+                onToken: (content) => {
+                    setState(prev => ({
+                        ...prev,
+                        characterDescription: prev.characterDescription + content
+                    }));
+                },
+                onError: (error) => {
+                    console.error('生成角色描述失败:', error);
+                    setState(prev => ({
+                        ...prev,
+                        error: '生成角色描述失败',
+                        isGeneratingDescription: false
+                    }));
+                },
+                onFinish: () => {
+                    // 将AI响应添加到历史记录
+                    setState(prev => {
+                        const assistantMessage = { role: 'assistant', content: prev.characterDescription };
+                        const newHistory = [...prev.chatHistory, assistantMessage].slice(-prev.maxContextSize);
+                        return {
+                            ...prev,
+                            isGeneratingDescription: false,
+                            chatHistory: newHistory
+                        };
+                    });
+                }
+            });
+
+        } catch (error) {
+            console.error('生成角色描述失败:', error);
+            setState(prev => ({
+                ...prev,
+                error: '生成角色描述失败',
+                isGeneratingDescription: false
+            }));
+        }
+    };
+
     return (
         <Container size="xl" py="xl">
             <Grid>
@@ -214,6 +300,10 @@ const Talks: React.FC<TalksProps> = () => {
                         onUpdateApiConfig={handleUpdateApiConfig}
                         onToggleCharacterModal={handleToggleCharacterModal}
                         onUpdateCharacterInput={handleUpdateCharacterInput}
+                        onEditCharacter={handleEditCharacter}
+                        onDeleteCharacter={handleDeleteCharacter}
+                        onUpdateCharacterPrompt={handleUpdateCharacterPrompt}
+                        onGenerateCharacterDescription={handleGenerateCharacterDescription}
                     />
                 </Grid.Col>
 

@@ -1,16 +1,9 @@
 import React, { useEffect } from 'react';
 import { Paper, Stack, Avatar, Checkbox, MultiSelect, Textarea, Select, Radio, Group, Button, Modal, TextInput, Text } from '@mantine/core';
 import { MdOutlineArrowDownward, MdInfo, MdEdit, MdDelete } from "react-icons/md";
-import { TalksState } from './types';
+import { TalksState, Character } from './types';
 import { TALK_TYPES } from './constants';
 import CharacterManager from './CharacterManager';
-
-interface Character {
-    id: string;
-    name: string;
-    description: string;
-    avatar?: string;
-}
 
 interface TalksFormProps {
     state: TalksState;

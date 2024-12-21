@@ -77,13 +77,23 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
                 />
             </Group>
 
-            {characters.map(char => (
+            {characters.map((char:any) => (
                 <Group key={char.id} position="apart">
                     <Text>{char.name}</Text>
                     <Group spacing="xs">
                         <MdEdit 
                             style={{ cursor: 'pointer' }}
-                            onClick={() => onEditCharacter?.(char)}
+                            onClick={() => {
+                                onUpdateCharacterInput?.(char.name);
+                                onUpdateCharacterDescription?.(char.description);
+                                onUpdateAvatar(char.avatar || '');
+                                onEditCharacter?.({
+                                    id: char.id,
+                                    name: char.name,
+                                    description: char.description,
+                                    avatar: char.avatar
+                                });
+                            }}
                         />
                         <MdDelete 
                             style={{ cursor: 'pointer' }}
@@ -101,14 +111,21 @@ const CharacterManager: React.FC<CharacterManagerProps> = ({
             <Textarea
                 label="角色描述指令"
                 placeholder="请输入角色描述指令，例如：'创建一个活泼开朗的女高中生角色'"
-                value={state.characterPrompt}
+                value={state.characterPrompt || ''}
                 onChange={(e) => onUpdateCharacterPrompt?.(e.currentTarget.value)}
                 minRows={2}
             />
             <Button
                 variant="outline"
-                onClick={() => onGenerateCharacterDescription?.(state.characterPrompt)}
+                onClick={() => {
+                    if (!state.characterPrompt) {
+                        alert('请先输入角色描述指令');
+                        return;
+                    }
+                    onGenerateCharacterDescription?.(state.characterPrompt);
+                }}
                 loading={state.isGeneratingDescription}
+                disabled={!state.characterPrompt}
             >
                 生成角色描述
             </Button>

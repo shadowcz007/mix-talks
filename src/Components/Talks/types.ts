@@ -56,6 +56,11 @@ export interface TalksState {
     isGeneratingDescription: boolean;
     newCharacterAvatar?: string;
     selectedCharacter?: Character;
+    chatHistory: Array<{
+        role: string;
+        content: string;
+    }>;
+    maxContextSize: number;
 }
 
 export interface Character {
